@@ -50,7 +50,8 @@ All pipeline files live in the DTS repo. This client repo contains only client-s
 │  ├─ design/
 │  └─ screenshots/
 └─ features/
-   └─ blacklist/        ← Blacklist beheer prototype (active)
+   ├─ blacklist/           ← Blacklist beheer prototype
+   └─ hiding-information/  ← Data privacy / rolgebaseerde inzage (6 concepts, E=winner)
 ```
 
 ## SharePoint Integration

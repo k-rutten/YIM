@@ -17,6 +17,15 @@
 - Timeline: Feature prototypes worden iteratief opgeleverd, geen harde deadline
 - Stakeholders: Nsecure product team, feedback loops via Figma + prototype reviews
 - Blacklist context: Bestaat alleen in AEOS emulator (access control connector), niet in YIM core domain
+- Hiding Information: Rolgebaseerde data-inzage met 9 autorisatiecategorieen, cross-company hard boundaries, AVG/GDPR compliance
+
+## Hiding Information — Feature-Specific Constraints
+- **Data model:** 9 authorization categories (identity, contact, government_id, employment, compliance, time_tracking, access, certificates, documents)
+- **Hard boundaries:** Zeer gevoelige data (BSN, VOG, contracts) en loongegevens ALTIJD geblokkeerd cross-company — platform-enforced
+- **Scope model:** own_company (altijd) + subcontractors (optioneel per rol)
+- **Existing YIM patterns to match:** Role settings editor (taken, dossierniveau, bestandtoegang), role-based access control
+- **Derivation engine:** `deriveCategories()` maps role settings → required data categories via TASK_CATEGORY_MAP, DOSSIERNIVEAU_MAP, BESTAND_MAP
+- **canReveal:** Tijdelijk onthullen (5 sec) van gemaskeerde velden, gelogd in audit trail
 
 ---
 *Last updated: 2026-03-26*
