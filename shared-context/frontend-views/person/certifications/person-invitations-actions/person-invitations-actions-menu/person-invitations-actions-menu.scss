@@ -1,0 +1,59 @@
+@use 'yim-common/src/scss/abstracts/variables';
+
+.actions-menu {
+    position: fixed;
+    border-radius: 4px;
+    box-shadow: 0 5px 5px rgb(0 0 0 / 5%);
+    display: flex;
+    flex-direction: column;
+    background-color: variables.$color-white;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    z-index: variables.$z-index-primary;
+
+    &__menu-item {
+        padding: 0 20px;
+        font-weight: 700;
+    }
+
+    &__action-button {
+        background-color: transparent;
+        color: variables.$color-primary;
+
+        &--revoke {
+            color: variables.$color-warning;
+        }
+
+        &--revoke,
+        &--edit {
+            background-color: transparent;
+            border: 0;
+            font-weight: variables.$global-font-weight-bold;
+            white-space: nowrap;
+            padding: 0;
+
+            &:first-child {
+                padding-top: 12px;
+            }
+
+            &:last-child {
+                padding-bottom: 12px;
+            }
+
+            &:hover {
+                cursor: pointer;
+            }
+
+            &:disabled {
+                background: none;
+                border: none;
+                color: variables.$color-grey-gray;
+
+                &:hover {
+                    cursor: not-allowed;
+                }
+            }
+        }
+    }
+}

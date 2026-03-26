@@ -1,0 +1,66 @@
+@use 'yim-common/src/scss/abstracts/functions';
+@use 'yim-common/src/scss/abstracts/mixins';
+@use 'yim-common/src/scss/abstracts/variables';
+
+.person {
+    padding: 0 0 15px;
+    position: relative;
+    min-height: calc(100vh - 135px);
+
+    $person: &;
+
+    &__content {
+        position: relative;
+        padding: 60px 20px 40px;
+
+        @include mixins.respond-to(xlarge) {
+            padding: 60px 100px 40px 230px;
+        }
+
+        &--sidebar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap-reverse;
+
+            #{$person}__details {
+                width: 100%;
+
+                @include mixins.respond-to(xlarge) {
+                    width: calc(100% - 332px);
+                }
+            }
+
+            #{$person}__actions {
+                margin-bottom: 50px;
+
+                @include mixins.respond-to(xlarge) {
+                    margin-bottom: auto;
+                }
+            }
+        }
+
+        #{$person}__details {
+            // please use BEM standards next time
+
+            > div {
+                padding: 0 0 2rem;
+            }
+        }
+
+        @include mixins.respond-to(large) {
+            padding-left: 230px;
+        }
+    }
+
+    &__content-header {
+        font-size: functions.rem-calc(28px);
+        color: variables.$color-primary;
+        margin-bottom: 20px;
+        padding-left: 40px;
+    }
+
+    &__content-no-results {
+        color: variables.$color-primary;
+    }
+}

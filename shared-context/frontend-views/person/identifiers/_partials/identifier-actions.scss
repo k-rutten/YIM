@@ -1,0 +1,63 @@
+@use 'yim-common/src/scss/abstracts/variables';
+
+.identifier-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+
+    &__actions-menu {
+        position: fixed;
+        border-radius: 4px;
+        box-shadow: 0 5px 5px rgb(0 0 0 / 5%);
+        display: flex;
+        flex-direction: column;
+        background-color: variables.$color-white;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        z-index: variables.$z-index-primary;
+    }
+
+    &__menu-item {
+        display: flex;
+        padding: 0 20px;
+        font-weight: variables.$global-font-weight-bold;
+    }
+
+    &__action-button {
+        background-color: transparent;
+        color: variables.$color-primary-dark;
+        border: 0;
+        font-weight: variables.$global-font-weight-bold;
+        font-size: variables.$global-font-size-smaller;
+        white-space: nowrap;
+        padding: 0;
+
+        &--warning {
+            color: variables.$color-warning;
+        }
+
+        &:first-child {
+            padding-top: 12px;
+        }
+
+        &:last-child {
+            padding-bottom: 12px;
+        }
+
+        &:hover {
+            cursor: pointer;
+        }
+
+        &:disabled {
+            background: none;
+            border: none;
+            color: variables.$color-grey-gray;
+
+            &:hover {
+                cursor: not-allowed;
+            }
+        }
+    }
+}

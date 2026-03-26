@@ -1,0 +1,6 @@
+.person-identifiers {
+    &__identification-number {
+        word-break: break-all;
+        overflow-wrap: break-word;
+    }
+}
