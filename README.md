@@ -1,13 +1,22 @@
-# YIM Prototypes
+# YIM — Client Context Repo
 
-Feature prototypes voor YIM platform, deelbaar via Vercel met stakeholders.
+DTS (Design That Ships) client context repo voor **Nsecure / YIM** (Your Identity Management).
 
-## Structuur
+## Gebruik
 
-- `shared-context/` — Gedeelde context en documentatie voor alle features
-- `blacklist/` — Blacklist beheer prototype
+```bash
+# Open in Claude Code
+cd YIM
+claude
+# "Read the DTS pipeline from ../Claude-DesignThatShips/SKILL.md and work on feature blacklist."
+```
 
 ## Features
 
-### Blacklist
-Beheer van geblokkeerde bedrijven en personen. Open `blacklist/index.html` of deploy via Vercel.
+| Feature | Status | Prototype |
+|---|---|---|
+| Blacklist | In progress | `features/blacklist/index.html` |
+
+## Structuur
+
+Zie `CLAUDE.md` voor volledige context structure en setup instructies.
