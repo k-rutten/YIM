@@ -497,8 +497,8 @@
         initialRolesA.contractor.roleSettings = createSecurityRoleSettings();
         initialRolesA.guest.roleSettings = createMinimalRoleSettings();
 
-        // Concept B roles (9 authorization categories, no profile link)
-        const initialRolesB = {
+        // Concept E: Categorieën per rol + presets + harde grenzen + viewer badges
+        const initialRolesE = {
             admin: { name: "Administrator", description: "Volledige toegang", canReveal: true, roleSettings: createAdminRoleSettings(),
               allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, time_tracking: true, access: true, certificates: true, documents: true },
               allowedScopes: { own_company: true, subcontractors: true } },
@@ -516,24 +516,6 @@
               allowedScopes: { own_company: true, subcontractors: false } }
         };
 
-        // Concept E uses same data shape as B (allowedCategories on role), deep-copied
-        const initialRolesE = {};
-        Object.keys(initialRolesB).forEach(k => {
-            initialRolesE[k] = { ...initialRolesB[k],
-                allowedCategories: { ...initialRolesB[k].allowedCategories },
-                allowedScopes: { ...initialRolesB[k].allowedScopes }
-            };
-        });
-
-        // Concept F: Best-of-all — B's data model + E's hard boundaries + wizard onboarding + preset badges
-        const initialRolesF = {};
-        Object.keys(initialRolesB).forEach(k => {
-            initialRolesF[k] = { ...initialRolesB[k],
-                allowedCategories: { ...initialRolesB[k].allowedCategories },
-                allowedScopes: { ...initialRolesB[k].allowedScopes }
-            };
-        });
-
         function App({ roles, setRoles, visibilityProfiles, setVisibilityProfiles, currentTab, setCurrentTab, concept, setConcept, viewerContext, setViewerContext }) {
             const [currentRole, setCurrentRole] = useState('admin');
             const [showHelp, setShowHelp] = useState(true);
@@ -543,10 +525,8 @@
 
             const CONCEPT_INFO = {
                 A: { title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee.', key: 'Centraal beheer via herbruikbare profielen' },
-                B: { title: 'Categorieën', color: 'bg-yim-green', how: 'Admin schakelt per rol de 9 datacategorieën aan/uit. Presets als startpunt.', what: 'Directe controle — geen tussenlaag, geen afhankelijkheden.', key: 'Simpel en flexibel, rol = bron van waarheid' },
                 C: { title: 'Inzageniveau', color: 'bg-blue-500', how: 'Admin kiest een gevoeligheidsniveau (1-4) per rol. Systeem suggereert op basis van taken.', what: 'Niveau 1 = alleen naam, niveau 4 = alles inclusief BSN/VOG.', key: 'Eenvoudige slider, systeem denkt mee' },
-                E: { title: 'Harde grenzen', color: 'bg-purple-500', how: 'Zelfde als B (categorieën per rol), maar het platform blokkeert automatisch gevoelige data bij cross-company.', what: 'BSN, VOG en loonstroken zijn niet door admins te ontsluiten voor externe partijen.', key: 'Flexibel + vangnet dat niet te overrulen is' },
-                F: { title: 'Gecombineerd', color: 'bg-indigo-500', how: 'Categorieën per rol (B) + harde grenzen (E) + preset-badges in de viewer.', what: 'Viewer toont welk inzageprofiel actief is. Admin heeft volledige controle binnen platformregels.', key: 'Best of B + E met visuele feedback' },
+                E: { title: 'Categorieën', color: 'bg-purple-500', how: 'Admin schakelt per rol de 9 datacategorieën aan/uit. Presets als startpunt. Platform blokkeert gevoelige data bij cross-company.', what: 'Viewer toont preset-badge. BSN/VOG/loonstroken zijn niet te ontsluiten voor externe partijen.', key: 'Directe controle + harde grenzen als vangnet' },
                 G: { title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn.', what: 'Categorieën worden afgeleid, niet handmatig gekozen. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid' },
             };
             const [revealedFields, setRevealedFields] = useState({});
@@ -799,7 +779,7 @@
                                             Admin
                                         </button>
                                     </div>
-                                    {currentTab === 'viewer' && (concept === 'A' || concept === 'F') && (
+                                    {currentTab === 'viewer' && (concept === 'A' || concept === 'E') && (
                                         <button
                                             onClick={() => setShowHelp(!showHelp)}
                                             className="text-sm text-yim-600 opacity-70 hover:text-yim-600"
@@ -834,7 +814,7 @@
                         {currentTab === 'viewer' && (
                         <>
                         {/* Company Context Switcher (all concepts except C which has its own) */}
-                        {(concept === 'A' || concept === 'B' || concept === 'E' || concept === 'F' || concept === 'G') && (
+                        {(concept === 'A' || concept === 'E' || concept === 'G') && (
                             <div className="mb-6 bg-purple-50 rounded-xl p-5 border border-purple-200">
                                 <div className="flex items-center justify-between flex-wrap gap-4">
                                     <div>
@@ -918,7 +898,7 @@
                                                 {visibilityProfiles.find(p => p.id === roleData.visibilityProfileId)?.name}
                                             </div>
                                         )}
-                                        {concept === 'F' && (() => {
+                                        {concept === 'E' && (() => {
                                             const rp = matchPresetForViewer(roleData);
                                             const colors = rp ? { full: 'bg-red-50 text-red-700 border-red-200', standard: 'bg-amber-50 text-amber-700 border-amber-200', operational: 'bg-emerald-50 text-emerald-700 border-emerald-200', minimal: 'bg-gray-50 text-gray-600 border-gray-200' }[rp.id] || 'bg-yim-50 text-yim-600 border-yim-200' : 'bg-yim-orange/10 text-yim-orange border-yim-orange/20';
                                             return (
@@ -974,7 +954,7 @@
                         )}
 
                         {/* Concept F: Profile info panel with preset name + category overview */}
-                        {showHelp && concept === 'F' && (
+                        {showHelp && concept === 'E' && (
                             <div className="mb-8 bg-indigo-50 rounded-xl p-6 border border-indigo-200">
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
@@ -1915,7 +1895,7 @@
                 { id: 'events', label: 'Evenementenbeheer' },
                 { id: 'config', label: 'Configuratiebeheer' }
             ];
-            const menuItems = allMenuItems.filter(item => (!item.conceptA || concept === 'A') && (!item.conceptB || concept === 'B' || concept === 'F'));
+            const menuItems = allMenuItems.filter(item => (!item.conceptA || concept === 'A') && (!item.conceptB || concept === 'E'));
 
             // ============ ROLE EDITOR LOGIC ============
 
@@ -2351,10 +2331,10 @@
                 const linkedProfile = concept === 'A' ? getProfileForRole(editForm) : null;
                 const totalCatCount = concept === 'C'
                     ? ALL_GROUPS.filter(g => g.subcatIds.some(id => isSubcatActive(id))).length
-                    : (concept === 'B' || concept === 'E' || concept === 'F' || concept === 'G')
+                    : (concept === 'E' || concept === 'G')
                     ? Object.values(editForm.allowedCategories || {}).filter(Boolean).length
                     : 0;
-                const matchedPreset = (concept === 'B' || concept === 'E' || concept === 'F' || concept === 'G') ? matchPreset(editForm) : null;
+                const matchedPreset = (concept === 'E' || concept === 'G') ? matchPreset(editForm) : null;
                 return (
                     <div className="fixed inset-0 bg-yim-100 z-50 overflow-hidden flex flex-col">
                         <div className="bg-white border-b border-yim-200 px-6 py-4 flex items-center justify-between shrink-0">
@@ -2454,7 +2434,7 @@
                                 )}
 
                                 {/* Concept B/E: Read-only platformregels indicator */}
-                                {(concept === 'B' || concept === 'E' || concept === 'F' || concept === 'G') && (
+                                {(concept === 'E' || concept === 'G') && (
                                     <div className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 mt-2 flex items-center gap-3">
                                         <svg className="w-5 h-5 text-purple-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                         <div>
@@ -2586,7 +2566,7 @@
                                 })()}
 
                                 {/* ===== CONCEPT B/F: Preset-First + Collapsible Groups ===== */}
-                                {(concept === 'B' || concept === 'F') && (
+                                {concept === 'E' && (
                                 <>
                                 <div className="bg-white rounded-xl border border-yim-200 overflow-hidden">
                                     {/* Preset selector - radio style */}
@@ -3235,7 +3215,7 @@
                                             <div className="w-4 h-8 bg-yim-200 rounded-full mt-2"></div>
                                             <div>
                                                 <h1 className="text-4xl font-bold text-yim-600">Rollenbeheer</h1>
-                                                <p className="text-base font-bold text-yim-600 mt-1">{concept === 'A' ? 'Beheer rollen en hun gekoppelde zichtbaarheidsprofielen' : concept === 'E' ? 'Beheer rollen en bekijk platformregels (harde grenzen)' : concept === 'F' ? 'Wizard-onboarding · Categorieën per rol · Platformregels' : concept === 'G' ? 'Taakgedreven data-inzage · Categorieën afgeleid uit rolinstellingen' : 'Beheer rollen en hun categorie-instellingen'}</p>
+                                                <p className="text-base font-bold text-yim-600 mt-1">{concept === 'A' ? 'Beheer rollen en hun gekoppelde zichtbaarheidsprofielen' : concept === 'G' ? 'Taakgedreven data-inzage · Categorieën afgeleid uit rolinstellingen' : concept === 'E' ? 'Categorieën per rol · Presets · Platformregels (harde grenzen)' : 'Beheer rollen en hun categorie-instellingen'}</p>
                                             </div>
                                         </div>
                                         <div className="bg-white rounded-lg border border-yim-200 overflow-hidden">
@@ -3245,7 +3225,7 @@
                                                         <th className="px-6 py-3 text-left text-sm font-normal text-white">Naam</th>
                                                         <th className="px-6 py-3 text-left text-sm font-normal text-white">Beschrijving</th>
                                                         <th className="px-6 py-3 text-left text-sm font-normal text-white">
-                                                            {concept === 'A' ? 'Profiel' : concept === 'B' ? 'Data zichtbaarheid' : concept === 'C' ? 'Inzageniveau' : concept === 'F' ? 'Inzageprofiel' : concept === 'G' ? 'Afgeleide inzage' : 'Harde grenzen'}
+                                                            {concept === 'A' ? 'Profiel' : concept === 'C' ? 'Inzageniveau' : concept === 'G' ? 'Afgeleide inzage' : 'Inzageprofiel'}
                                                         </th>
                                                         <th className="px-6 py-3 text-left text-sm font-normal text-white">Onthullen</th>
                                                         <th className="px-6 py-3 text-right text-sm font-normal text-white"></th>
@@ -3254,12 +3234,12 @@
                                                 <tbody>
                                                     {Object.entries(roles).map(([key, roleData]) => {
                                                         const rp = concept === 'A' ? getProfileForRole(roleData) : null;
-                                                        const roleTotalCat = (concept === 'B' || concept === 'E' || concept === 'F' || concept === 'G')
+                                                        const roleTotalCat = (concept === 'E' || concept === 'G')
                                                             ? Object.values(roleData.allowedCategories || {}).filter(Boolean).length
                                                             : concept === 'C'
                                                             ? (Object.values(roleData.categories || {}).filter(Boolean).length + Object.values(roleData.dossierCategories || {}).filter(Boolean).length + Object.values(roleData.certCategories || {}).filter(Boolean).length + Object.values(roleData.fileCategories || {}).filter(Boolean).length)
                                                             : 0;
-                                                        const roleTotalMax = (concept === 'B' || concept === 'E' || concept === 'F' || concept === 'G') ? ALL_CATEGORY_IDS.length : (dataGroups.length + dossierComponents.length + certificateCategories.length + fileCategories.length);
+                                                        const roleTotalMax = (concept === 'E' || concept === 'G') ? ALL_CATEGORY_IDS.length : (dataGroups.length + dossierComponents.length + certificateCategories.length + fileCategories.length);
                                                         const roleCanReveal = concept === 'A' ? rp?.canReveal : roleData.canReveal;
                                                         return (
                                                             <tr key={key} className="border-t border-yim-200 hover:bg-yim-50 cursor-pointer transition-colors" onClick={() => openRoleEditor(key)}>
@@ -3287,10 +3267,10 @@
                                                                     })() : (() => {
                                                                         const rowPreset = matchPreset(roleData);
                                                                         const scopeLabel = roleData.allowedScopes?.subcontractors ? 'Incl. onderaannemers' : 'Eigen organisatie';
-                                                                        const badgeColors = concept === 'F' && rowPreset ? { full: 'bg-red-100 text-red-700 border-red-200', standard: 'bg-amber-100 text-amber-700 border-amber-200', operational: 'bg-emerald-100 text-emerald-700 border-emerald-200', minimal: 'bg-gray-100 text-gray-600 border-gray-200' }[rowPreset.id] || 'bg-yim-50 text-yim-600 border-yim-200' : null;
+                                                                        const badgeColors = concept === 'E' && rowPreset ? { full: 'bg-red-100 text-red-700 border-red-200', standard: 'bg-amber-100 text-amber-700 border-amber-200', operational: 'bg-emerald-100 text-emerald-700 border-emerald-200', minimal: 'bg-gray-100 text-gray-600 border-gray-200' }[rowPreset.id] || 'bg-yim-50 text-yim-600 border-yim-200' : null;
                                                                         return (
                                                                             <div className="flex flex-wrap items-center gap-1.5">
-                                                                                <span className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded border ${concept === 'F' ? (badgeColors || 'bg-yim-orange/10 text-yim-orange border-yim-orange/20') + ' rounded-full font-semibold' : 'text-yim-600 bg-yim-50 border-yim-200'}`}>
+                                                                                <span className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded border ${concept === 'E' ? (badgeColors || 'bg-yim-orange/10 text-yim-orange border-yim-orange/20') + ' rounded-full font-semibold' : 'text-yim-600 bg-yim-50 border-yim-200'}`}>
                                                                                     {rowPreset ? rowPreset.name : 'Aangepast'}
                                                                                 </span>
                                                                                 <span className="text-xs text-yim-400">·</span>
@@ -3394,7 +3374,7 @@
                                 )}
 
                                 {/* Concept B/E: Hard Boundary Rules Table (read-only) */}
-                                {(concept === 'B' || concept === 'E' || concept === 'F' || concept === 'G') && activeMenu === 'roles' && (
+                                {(concept === 'E' || concept === 'G') && activeMenu === 'roles' && (
                                     <div className="mt-8">
                                         <div className="flex items-start gap-4 mb-6">
                                             <div className="w-4 h-8 bg-purple-200 rounded-full mt-2"></div>
@@ -3461,7 +3441,7 @@
                                 )}
 
                                 {/* ===== UX-GROEPEN VIEW (Concept B) ===== */}
-                                {activeMenu === 'groups' && (concept === 'B' || concept === 'F') && (
+                                {activeMenu === 'groups' && concept === 'E' && (
                                     <>
                                         <div className="flex items-start gap-4 mb-6">
                                             <div className="w-4 h-8 bg-yim-200 rounded-full mt-2"></div>
@@ -3672,17 +3652,15 @@
         function Root() {
             const [concept, setConcept] = useState('A');
             const [rolesA, setRolesA] = useState(initialRolesA);
-            const [rolesB, setRolesB] = useState(initialRolesB);
             const [rolesC, setRolesC] = useState(initialRolesC);
             const [rolesE, setRolesE] = useState(initialRolesE);
-            const [rolesF, setRolesF] = useState(initialRolesF);
             const [rolesG, setRolesG] = useState(initialRolesG);
             const [visibilityProfiles, setVisibilityProfiles] = useState(initialVisibilityProfiles);
             const [currentTab, setCurrentTab] = useState('viewer');
             const [viewerContext, setViewerContext] = useState('own_company');
 
-            const roles = concept === 'A' ? rolesA : concept === 'B' ? rolesB : concept === 'C' ? rolesC : concept === 'F' ? rolesF : concept === 'G' ? rolesG : rolesE;
-            const setRoles = concept === 'A' ? setRolesA : concept === 'B' ? setRolesB : concept === 'C' ? setRolesC : concept === 'F' ? setRolesF : concept === 'G' ? setRolesG : setRolesE;
+            const roles = concept === 'A' ? rolesA : concept === 'C' ? rolesC : concept === 'G' ? rolesG : rolesE;
+            const setRoles = concept === 'A' ? setRolesA : concept === 'C' ? setRolesC : concept === 'G' ? setRolesG : setRolesE;
 
             return (
                 <div>
@@ -3695,17 +3673,11 @@
                                     <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         A: Profielen
                                     </button>
-                                    <button onClick={() => setConcept('B')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'B' ? 'bg-yim-green text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        B: Categorieën
-                                    </button>
                                     <button onClick={() => setConcept('C')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'C' ? 'bg-blue-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         C: Inzageniveau
                                     </button>
                                     <button onClick={() => setConcept('E')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'E' ? 'bg-purple-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        E: Harde grenzen
-                                    </button>
-                                    <button onClick={() => setConcept('F')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'F' ? 'bg-indigo-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        F: Gecombineerd
+                                        E: Categorieën
                                     </button>
                                     <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         G: Taakafleiding
@@ -3714,11 +3686,9 @@
                             </div>
                             <p className="text-xs text-white/40">
                                 {concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
-                                 : concept === 'B' ? 'Rol = bron van waarheid · Presets vullen categorieën in, geen link bewaard'
                                  : concept === 'C' ? 'Inzageniveau met suggestie · Categorieën volgen uit rolinstellingen'
-                                 : concept === 'F' ? 'B + harde grenzen + preset-badges + profielnamen'
                                  : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
-                                 : 'Platformregels · Zeer gevoelige data geblokkeerd bij cross-company toegang'}
+                                 : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'}
                             </p>
                         </div>
                     </div>
