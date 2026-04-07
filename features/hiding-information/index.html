@@ -534,11 +534,21 @@
             };
         });
 
-        function App({ roles, setRoles, visibilityProfiles, setVisibilityProfiles, currentTab, setCurrentTab, concept, viewerContext, setViewerContext }) {
+        function App({ roles, setRoles, visibilityProfiles, setVisibilityProfiles, currentTab, setCurrentTab, concept, setConcept, viewerContext, setViewerContext }) {
             const [currentRole, setCurrentRole] = useState('admin');
             const [showHelp, setShowHelp] = useState(true);
             const [auditLog, setAuditLog] = useState([]);
             const [showAudit, setShowAudit] = useState(false);
+            const [showConceptInfo, setShowConceptInfo] = useState(false);
+
+            const CONCEPT_INFO = {
+                A: { title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee.', key: 'Centraal beheer via herbruikbare profielen' },
+                B: { title: 'Categorieën', color: 'bg-yim-green', how: 'Admin schakelt per rol de 9 datacategorieën aan/uit. Presets als startpunt.', what: 'Directe controle — geen tussenlaag, geen afhankelijkheden.', key: 'Simpel en flexibel, rol = bron van waarheid' },
+                C: { title: 'Inzageniveau', color: 'bg-blue-500', how: 'Admin kiest een gevoeligheidsniveau (1-4) per rol. Systeem suggereert op basis van taken.', what: 'Niveau 1 = alleen naam, niveau 4 = alles inclusief BSN/VOG.', key: 'Eenvoudige slider, systeem denkt mee' },
+                E: { title: 'Harde grenzen', color: 'bg-purple-500', how: 'Zelfde als B (categorieën per rol), maar het platform blokkeert automatisch gevoelige data bij cross-company.', what: 'BSN, VOG en loonstroken zijn niet door admins te ontsluiten voor externe partijen.', key: 'Flexibel + vangnet dat niet te overrulen is' },
+                F: { title: 'Gecombineerd', color: 'bg-indigo-500', how: 'Categorieën per rol (B) + harde grenzen (E) + preset-badges in de viewer.', what: 'Viewer toont welk inzageprofiel actief is. Admin heeft volledige controle binnen platformregels.', key: 'Best of B + E met visuele feedback' },
+                G: { title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn.', what: 'Categorieën worden afgeleid, niet handmatig gekozen. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid' },
+            };
             const [revealedFields, setRevealedFields] = useState({});
 
             // Concept F: match role config to preset name for viewer badges
@@ -797,6 +807,13 @@
                                             {showHelp ? 'Verberg' : 'Toon'} profiel
                                         </button>
                                     )}
+                                    <button
+                                        onClick={() => setShowConceptInfo(true)}
+                                        className="px-3 py-1.5 text-sm text-yim-600 opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1.5"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Hoe werkt dit?
+                                    </button>
                                     <button
                                         onClick={() => setShowAudit(!showAudit)}
                                         className="relative px-4 py-2 bg-yim-700 text-white text-sm font-medium rounded-lg hover:bg-yim-600 transition-colors"
@@ -1059,6 +1076,42 @@
                                                 Wis log
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Concept Info Modal */}
+                        {showConceptInfo && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6" onClick={() => setShowConceptInfo(false)}>
+                                <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                                    <div className="p-6 border-b border-yim-200">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h2 className="text-lg font-semibold text-yim-600">Hoe werken de concepten?</h2>
+                                                <p className="text-sm text-yim-600 opacity-70">Elk concept biedt een andere benadering voor data-inzage beheer</p>
+                                            </div>
+                                            <button onClick={() => setShowConceptInfo(false)} className="text-yim-300 hover:text-yim-600 opacity-70">
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                        {Object.entries(CONCEPT_INFO).map(([key, info]) => (
+                                            <button key={key} onClick={() => { setConcept(key); setShowConceptInfo(false); }}
+                                                className={`w-full text-left rounded-xl border-2 p-4 transition-all ${concept === key ? 'border-yim-500 bg-yim-50' : 'border-yim-200 hover:border-yim-300 bg-white'}`}>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className={`w-2.5 h-2.5 rounded-full ${info.color}`}></span>
+                                                    <h3 className="text-sm font-bold text-yim-600">{key}: {info.title}</h3>
+                                                    {concept === key && <span className="ml-auto text-xs font-medium text-yim-500 bg-yim-100 px-2 py-0.5 rounded-full">Actief</span>}
+                                                </div>
+                                                <div className="ml-[22px] space-y-1">
+                                                    <p className="text-xs text-yim-600"><span className="font-medium opacity-50 mr-1">Hoe:</span>{info.how}</p>
+                                                    <p className="text-xs text-yim-600"><span className="font-medium opacity-50 mr-1">Effect:</span>{info.what}</p>
+                                                    <p className="text-xs font-medium text-yim-500 mt-1.5">{info.key}</p>
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -3669,7 +3722,7 @@
                             </p>
                         </div>
                     </div>
-                    <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} viewerContext={viewerContext} setViewerContext={setViewerContext} />
+                    <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} setConcept={setConcept} viewerContext={viewerContext} setViewerContext={setViewerContext} />
                 </div>
             );
         }
