@@ -477,9 +477,9 @@
             const [showConceptInfo, setShowConceptInfo] = useState(false);
 
             const CONCEPT_INFO = {
-                A: { title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee.', key: 'Centraal beheer via herbruikbare profielen' },
-                C: { title: 'Inzageniveau', color: 'bg-blue-500', how: 'Admin kiest een gevoeligheidsniveau (1-4) per rol. Systeem suggereert op basis van taken.', what: 'Niveau 1 = alleen naam, niveau 4 = alles inclusief BSN/VOG.', key: 'Eenvoudige slider, systeem denkt mee' },
-                G: { title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn.', what: 'Categorieën worden afgeleid, niet handmatig gekozen. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid' },
+                A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen. Categorieën kunnen optioneel automatisch worden ingevuld via een taakselectie (zie "Afleiden uit taken" in profiel-editor).', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen + optionele taak-afleiding' },
+                C: { number: 2, title: 'Inzageniveau', color: 'bg-blue-500', how: 'Admin kiest een gevoeligheidsniveau (1-4) per rol. Systeem suggereert op basis van taken.', what: 'Niveau 1 = alleen naam, niveau 4 = alles inclusief BSN/VOG.', key: 'Eenvoudige slider, systeem denkt mee' },
+                G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn.', what: 'Categorieën worden afgeleid, niet handmatig gekozen. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid' },
             };
             const [revealedFields, setRevealedFields] = useState({});
 
@@ -880,7 +880,7 @@
                                                 className={`w-full text-left rounded-xl border-2 p-4 transition-all ${concept === key ? 'border-yim-500 bg-yim-50' : 'border-yim-200 hover:border-yim-300 bg-white'}`}>
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className={`w-2.5 h-2.5 rounded-full ${info.color}`}></span>
-                                                    <h3 className="text-sm font-bold text-yim-600">{key}: {info.title}</h3>
+                                                    <h3 className="text-sm font-bold text-yim-600">{info.number}: {info.title}</h3>
                                                     {concept === key && <span className="ml-auto text-xs font-medium text-yim-500 bg-yim-100 px-2 py-0.5 rounded-full">Actief</span>}
                                                 </div>
                                                 <div className="ml-[22px] space-y-1">
@@ -1646,7 +1646,7 @@
             const [showAllRoles, setShowAllRoles] = useState(false);
             const [saveConfirm, setSaveConfirm] = useState(false);
             const [profileDerivationTasks, setProfileDerivationTasks] = useState([]);
-            const [showDerivationPanel, setShowDerivationPanel] = useState(false);
+            const [showDerivationPanel, setShowDerivationPanel] = useState(true);
             const [openMenuKey, setOpenMenuKey] = useState(null);
 
             // Close editors on concept switch to prevent stale state
@@ -1879,7 +1879,7 @@
                 setShowAllRoles(false);
                 setSaveConfirm(false);
                 setProfileDerivationTasks([]);
-                setShowDerivationPanel(false);
+                setShowDerivationPanel(true);
             };
 
             const applyTaskDerivation = () => {
@@ -2031,7 +2031,7 @@
                                     </div>
                                 </div>
 
-                                {/* Optionele afleiding uit taken (van Concept G) */}
+                                {/* Optionele afleiding uit taken (taakgedreven, vergelijkbaar met Concept 3) */}
                                 <div className="bg-blue-50 rounded-xl border border-blue-200 overflow-hidden">
                                     <button onClick={() => setShowDerivationPanel(s => !s)}
                                         className="w-full px-5 py-3 flex items-center justify-between hover:bg-blue-100 transition-colors">
@@ -2039,8 +2039,8 @@
                                             <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                             </svg>
-                                            <span className="text-sm font-semibold text-blue-700">Afleiden uit taken</span>
-                                            <span className="text-xs text-blue-600 opacity-70">— optionele hulp om categorieën in te vullen</span>
+                                            <span className="text-sm font-semibold text-blue-700">Slim invullen: afleiden uit taken</span>
+                                            <span className="text-[10px] font-bold text-white bg-blue-500 px-1.5 py-0.5 rounded uppercase tracking-wider">Optioneel</span>
                                         </div>
                                         <svg className={`w-4 h-4 text-blue-600 transition-transform ${showDerivationPanel ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -3113,13 +3113,13 @@
                                 <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Concept</span>
                                 <div className="flex bg-white/10 rounded-lg p-0.5">
                                     <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        A: Profielen
+                                        1: Profielen
                                     </button>
                                     <button onClick={() => setConcept('C')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'C' ? 'bg-blue-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        C: Inzageniveau
+                                        2: Inzageniveau
                                     </button>
                                     <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        G: Taakafleiding
+                                        3: Taakafleiding
                                     </button>
                                 </div>
                             </div>
