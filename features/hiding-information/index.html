@@ -1726,11 +1726,20 @@
             };
 
             const saveRole = () => {
+                // Concept G: persist live-derived state so role table + viewer reflect current roleSettings
+                let toSave = editForm;
+                if (concept === 'G') {
+                    const { allowedCategories: derived, _justifications9 } = deriveTo9Categories(editForm.roleSettings || createDefaultRoleSettings());
+                    const overrides = editForm._overrides || {};
+                    const final = { ...derived };
+                    Object.entries(overrides).forEach(([k, v]) => { final[k] = v; });
+                    toSave = { ...editForm, allowedCategories: final, _derivedCategories: derived, _justifications9 };
+                }
                 if (isNewRole) {
                     const key = editForm.name.toLowerCase().replace(/\s+/g, '_');
-                    setRoles(prev => ({ ...prev, [key]: editForm }));
+                    setRoles(prev => ({ ...prev, [key]: toSave }));
                 } else {
-                    setRoles(prev => ({ ...prev, [selectedRole]: editForm }));
+                    setRoles(prev => ({ ...prev, [selectedRole]: toSave }));
                 }
                 closeRoleEditor();
             };
@@ -2252,12 +2261,13 @@
 
                                 {/* ===== CONCEPT G: Afgeleide data-inzage panel ===== */}
                                 {concept === 'G' && (() => {
-                                    const derivedCats = editForm._derivedCategories || {};
+                                    // Bereken altijd LIVE uit huidige roleSettings — niet uit (mogelijk stale) _derivedCategories
+                                    const liveDerived = deriveTo9Categories(editForm.roleSettings || createDefaultRoleSettings());
+                                    const derivedCats = liveDerived.allowedCategories;
+                                    const justifications = liveDerived._justifications9 || {};
                                     const overrides = editForm._overrides || {};
-                                    const justifications = editForm._justifications9 || {};
                                     const overrideCount = Object.keys(overrides).length;
                                     const derivedCount = Object.values(derivedCats).filter(Boolean).length;
-                                    const totalActive = Object.values(editForm.allowedCategories || {}).filter(Boolean).length;
 
                                     const toggleOverride = (catId) => {
                                         setEditForm(prev => {
@@ -2291,7 +2301,8 @@
                                             {CATEGORIES.map(cat => {
                                                 const isDerived = !!derivedCats[cat.id];
                                                 const isOverridden = overrides[cat.id] !== undefined;
-                                                const isActive = !!(editForm.allowedCategories || {})[cat.id];
+                                                // Live computed: derived + overrides applied
+                                                const isActive = isOverridden ? !!overrides[cat.id] : isDerived;
                                                 const reasons = justifications[cat.id] || [];
                                                 const isSensitive = cat.sensitivity === 'zeer_gevoelig';
 
