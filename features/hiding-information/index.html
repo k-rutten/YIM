@@ -1712,6 +1712,7 @@
             const [showAllRoles, setShowAllRoles] = useState(false);
             const [saveConfirm, setSaveConfirm] = useState(false);
             const [openMenuKey, setOpenMenuKey] = useState(null);
+            const [expandedCatId, setExpandedCatId] = useState(null);
 
             // Close editors on concept switch to prevent stale state
             React.useEffect(() => {
@@ -1847,6 +1848,7 @@
                 setSelectedRole(null);
                 setEditForm({});
                 setIsNewRole(false);
+                setExpandedCatId(null);
             };
 
             const saveRole = () => {
@@ -2366,27 +2368,53 @@
 
                                 {/* ===== CONCEPT G: Afgeleide data-inzage panel ===== */}
                                 {concept === 'G' && (() => {
-                                    // Bereken altijd LIVE uit huidige roleSettings — niet uit (mogelijk stale) _derivedCategories
+                                    // Live-derive uit huidige roleSettings
                                     const liveDerived = deriveTo9Categories(editForm.roleSettings || createDefaultRoleSettings());
                                     const derivedCats = liveDerived.allowedCategories;
                                     const justifications = liveDerived._justifications9 || {};
                                     const overrides = editForm._overrides || {};
+                                    const fieldOverrides = editForm._fieldOverrides || {};
                                     const overrideCount = Object.keys(overrides).length;
+                                    const fieldOverrideCount = Object.values(fieldOverrides).reduce((sum, o) => sum + Object.keys(o || {}).length, 0);
                                     const derivedCount = Object.values(derivedCats).filter(Boolean).length;
 
                                     const toggleOverride = (catId) => {
                                         setEditForm(prev => {
-                                            const derived = prev._derivedCategories || {};
+                                            const derived = deriveTo9Categories(prev.roleSettings || createDefaultRoleSettings()).allowedCategories;
                                             const ov = { ...(prev._overrides || {}) };
                                             if (ov[catId] !== undefined) {
-                                                delete ov[catId]; // Remove override → revert to derived
+                                                delete ov[catId];
                                             } else {
-                                                ov[catId] = !derived[catId]; // Override: flip from derived
+                                                ov[catId] = !derived[catId];
                                             }
                                             const final = { ...derived };
                                             Object.entries(ov).forEach(([k, v]) => { final[k] = v; });
-                                            return { ...prev, allowedCategories: final, _overrides: ov };
+                                            // Clear field overrides voor categorieën die nu uit zijn
+                                            const fo = { ...(prev._fieldOverrides || {}) };
+                                            Object.keys(fo).forEach(catK => { if (!final[catK]) delete fo[catK]; });
+                                            return { ...prev, allowedCategories: final, _overrides: ov, _fieldOverrides: fo };
                                         });
+                                    };
+
+                                    const toggleField = (catId, fieldId) => {
+                                        setEditForm(prev => {
+                                            const fo = { ...(prev._fieldOverrides || {}) };
+                                            const catFields = { ...(fo[catId] || {}) };
+                                            // Default: alle velden ON wanneer categorie ON. Override flipt naar OFF.
+                                            // Tweede klik: terug naar default (delete override).
+                                            if (catFields[fieldId] === false) {
+                                                delete catFields[fieldId];
+                                            } else {
+                                                catFields[fieldId] = false;
+                                            }
+                                            if (Object.keys(catFields).length === 0) delete fo[catId];
+                                            else fo[catId] = catFields;
+                                            return { ...prev, _fieldOverrides: fo };
+                                        });
+                                    };
+
+                                    const toggleExpand = (catId) => {
+                                        setExpandedCatId(prev => prev === catId ? null : catId);
                                     };
 
                                     return (
@@ -2396,49 +2424,111 @@
                                                 <h3 className="text-sm font-semibold text-yim-600">Afgeleide data-inzage</h3>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs text-yim-500 bg-yim-50 px-2 py-0.5 rounded border border-yim-200">{derivedCount} afgeleid</span>
-                                                    {overrideCount > 0 && <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{overrideCount} override</span>}
+                                                    {overrideCount > 0 && <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{overrideCount} categorie-override</span>}
+                                                    {fieldOverrideCount > 0 && <span className="text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">{fieldOverrideCount} veld-override</span>}
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald door rolinstellingen. Klik om handmatig te overriden.</p>
+                                            <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald. Klik op de checkbox om de hele categorie te overriden, of klap open voor veld-niveau controle.</p>
                                         </div>
 
                                         <div className="px-5 py-4 space-y-2">
                                             {CATEGORIES.map(cat => {
                                                 const isDerived = !!derivedCats[cat.id];
                                                 const isOverridden = overrides[cat.id] !== undefined;
-                                                // Live computed: derived + overrides applied
                                                 const isActive = isOverridden ? !!overrides[cat.id] : isDerived;
                                                 const reasons = justifications[cat.id] || [];
                                                 const isSensitive = cat.sensitivity === 'zeer_gevoelig';
+                                                const isAllOrNothing = cat.allOrNothing === true;
+                                                const isExpanded = expandedCatId === cat.id;
+                                                const canExpand = isActive && !isAllOrNothing;
+                                                const catFieldOverrides = fieldOverrides[cat.id] || {};
+                                                const hiddenFieldCount = Object.values(catFieldOverrides).filter(v => v === false).length;
+                                                const totalFields = cat.fields.length;
+                                                const visibleFieldCount = totalFields - hiddenFieldCount;
 
                                                 return (
-                                                    <div key={cat.id} className={`flex items-center justify-between px-4 py-3 rounded-lg border transition-all cursor-pointer ${
-                                                        isOverridden
-                                                            ? isActive ? 'bg-amber-50 border-amber-300' : 'bg-amber-50/50 border-amber-200'
-                                                            : isActive ? 'bg-teal-50 border-teal-300' : 'bg-yim-50 border-yim-200'
-                                                    }`} onClick={() => toggleOverride(cat.id)}>
-                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <div key={cat.id} className="rounded-lg overflow-hidden border transition-all" style={{
+                                                    borderColor: isOverridden ? (isActive ? '#fbbf24' : '#fcd34d') : isActive ? '#5eead4' : '#e5e7eb',
+                                                    backgroundColor: isOverridden ? (isActive ? '#fffbeb' : '#fefce8') : isActive ? '#f0fdfa' : '#f9fafb'
+                                                }}>
+                                                    {/* Category row */}
+                                                    <div className="flex items-center justify-between px-4 py-3">
+                                                        <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => toggleOverride(cat.id)}>
                                                             <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isActive ? isOverridden ? 'bg-amber-500' : 'bg-teal-500' : 'bg-yim-200'}`}>
                                                                 {isActive && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                                             </div>
-                                                            <div className="min-w-0">
-                                                                <div className="flex items-center gap-2">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2 flex-wrap">
                                                                     <span className={`text-sm font-medium ${isActive ? 'text-yim-600' : 'text-yim-400'}`}>{cat.name}</span>
-                                                                    {isSensitive && <svg className="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>}
+                                                                    {isSensitive && <svg className="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 20 20" title="Zeer gevoelig"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>}
+                                                                    {isAllOrNothing && <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">ALL-OR-NOTHING</span>}
                                                                     {isOverridden && <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">OVERRIDE</span>}
+                                                                    {hiddenFieldCount > 0 && isActive && <span className="text-[10px] font-semibold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">{hiddenFieldCount} veld(en) verborgen</span>}
                                                                 </div>
                                                                 {isDerived && reasons.length > 0 && (
-                                                                    <p className="text-[11px] text-yim-500 mt-0.5 truncate">{reasons.slice(0, 3).join(', ')}{reasons.length > 3 ? ` +${reasons.length - 3}` : ''}</p>
+                                                                    <p className="text-[11px] text-yim-500 mt-0.5 truncate">Afgeleid uit: {reasons.slice(0, 3).join(', ')}{reasons.length > 3 ? ` +${reasons.length - 3}` : ''}</p>
                                                                 )}
                                                                 {!isDerived && !isOverridden && (
                                                                     <p className="text-[11px] text-yim-400 mt-0.5">Niet nodig voor huidige taken</p>
                                                                 )}
+                                                                {isActive && !isAllOrNothing && (
+                                                                    <p className="text-[11px] text-yim-500 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar</p>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex-shrink-0 ml-2">
+                                                        <div className="flex-shrink-0 ml-2 flex items-center gap-2">
                                                             {isDerived && !isOverridden && <span className="text-[10px] text-teal-600 bg-teal-100 px-1.5 py-0.5 rounded font-medium">Afgeleid</span>}
+                                                            {canExpand && (
+                                                                <button onClick={(e) => { e.stopPropagation(); toggleExpand(cat.id); }}
+                                                                    className="p-1.5 text-yim-500 hover:text-yim-700 hover:bg-white/60 rounded transition-colors">
+                                                                    <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
+
+                                                    {/* Field-level drill-down */}
+                                                    {isExpanded && canExpand && (
+                                                        <div className="px-5 py-3 bg-white/60 border-t border-yim-200/60 space-y-1.5">
+                                                            <p className="text-[11px] text-yim-600 opacity-60 mb-2">Klik op een veld om individueel te verbergen. Velden zonder override volgen de categorie.</p>
+                                                            {cat.fields.map(field => {
+                                                                const fieldHidden = catFieldOverrides[field.id] === false;
+                                                                const fieldSensitive = field.sensitivity === 'zeer_gevoelig';
+                                                                return (
+                                                                    <div key={field.id}
+                                                                        onClick={() => toggleField(cat.id, field.id)}
+                                                                        className={`flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${
+                                                                            fieldHidden ? 'bg-orange-50 hover:bg-orange-100' : 'bg-white hover:bg-yim-50'
+                                                                        }`}>
+                                                                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                                            <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${fieldHidden ? 'bg-orange-300' : 'bg-teal-500'}`}>
+                                                                                {!fieldHidden && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                                                {fieldHidden && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>}
+                                                                            </div>
+                                                                            <span className={`text-[12px] ${fieldHidden ? 'text-orange-700 line-through' : 'text-yim-700'}`}>{field.name}</span>
+                                                                            {fieldSensitive && (
+                                                                                <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded border border-red-200 uppercase tracking-wider">Zeer gevoelig</span>
+                                                                            )}
+                                                                        </div>
+                                                                        {fieldHidden && <span className="text-[10px] text-orange-600 font-medium">Verborgen</span>}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {/* All-or-nothing notice */}
+                                                    {isActive && isAllOrNothing && (
+                                                        <div className="px-5 py-2 bg-red-50/60 border-t border-red-200/60">
+                                                            <p className="text-[11px] text-red-700 flex items-center gap-1.5">
+                                                                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                                Overheids-ID: alle velden ({totalFields}) zijn als één geheel zichtbaar of verborgen. Geen veld-niveau control.
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 );
                                             })}
                                         </div>
