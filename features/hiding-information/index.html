@@ -1425,9 +1425,21 @@
                 certCategories: compute(certificateCategories, 'certCategories'),
                 fileCategories: compute(fileCategories, 'fileCategories')
             };
-            // Also include hierarchy subcategories not in legacy arrays
+            // Also include hierarchy subcategories not in legacy arrays.
+            // Map nieuwe hierarchy IDs naar legacy buckets voor backwards compat.
+            const hierarchyBucketMap = {
+                'persoonsgegevens': 'categories',
+                'identificatie': 'categories',      // Overheids-ID hoort onder persoonsgegevens-bucket
+                'arbeid': 'dossierCategories',       // Werkgever + sociale lasten = dossier
+                'kwalificaties': 'dossierCategories', // Compliance + cert = dossier-bucket
+                'bestanden': 'fileCategories',
+                'toegang': 'dossierCategories',      // Toegang & voertuig fallback
+                // Legacy fallbacks
+                'dossier': 'dossierCategories',
+                'certificaten': 'certCategories'
+            };
             CATEGORY_HIERARCHY.forEach(h => {
-                const bucket = h.id === 'persoonsgegevens' ? 'categories' : h.id === 'dossier' ? 'dossierCategories' : h.id === 'certificaten' ? 'certCategories' : 'fileCategories';
+                const bucket = hierarchyBucketMap[h.id] || 'categories';
                 h.subcategories.forEach(s => {
                     if (result[bucket][s.id] === undefined) {
                         const base = CATEGORY_MIN_LEVEL[s.id] <= level;
