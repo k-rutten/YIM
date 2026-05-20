@@ -88,28 +88,28 @@
                 name: 'Volledige inzage',
                 description: 'Alle velden en dossieronderdelen zichtbaar',
                 canReveal: true,
-                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, time_tracking: true, access: true, certificates: true, documents: true }
+                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true, access_vehicle: true }
             },
             {
                 id: 'standard',
                 name: 'Standaard inzage',
                 description: 'Basis- en werkgerelateerde velden, gevoelige data verborgen',
                 canReveal: true,
-                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, time_tracking: true, access: false, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: false }
             },
             {
                 id: 'operational',
                 name: 'Operationele inzage',
-                description: 'Basisidentificatie, compliance en uren',
+                description: 'Basisidentificatie, compliance en toegang',
                 canReveal: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, time_tracking: true, access: true, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: true }
             },
             {
                 id: 'minimal',
                 name: 'Minimale inzage',
                 description: 'Alleen naam en VCA-certificaten',
                 canReveal: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, time_tracking: false, access: false, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false, access_vehicle: false }
             }
         ];
 
@@ -122,84 +122,137 @@
             guest: { name: "Guest", description: "Basis verificatie", visibilityProfileId: 'minimal' }
         };
 
-        // ============ CONCEPT B: Categories on roles, presets as UX helper ============
-        // 9 authorization categories grouped under 4 UI headers
+        // ============ AUTHORIZATION CATEGORIES (9, codebase-aligned) ============
+        // Categorie-namen + velden komen 1:1 uit de YIM-codebase (Person.cs, registration.ts, translations).
+        // Drill-down per veld is alleen in Concept 3 (Task 2). Government-ID = all-or-nothing.
         const CATEGORIES = [
             { id: 'identity', name: 'Identiteit', uiGroup: 'persoonsgegevens', sensitivity: 'basis',
               fields: [
-                { id: 'identity', name: 'Identiteit (basis)', items: ['Voornaam', 'Achternaam', 'Geboortedatum'] },
-                { id: 'foto', name: 'Foto', items: ['Pasfoto', 'ID-foto'] },
-                { id: 'identificatie_locatie', name: 'Nationaliteit', items: ['Nationaliteit', 'Vestigingsland', 'Woonplaats'] }
+                { id: 'first_name', name: 'Voornaam' },
+                { id: 'initials', name: 'Initialen' },
+                { id: 'last_name_prefix', name: 'Tussenvoegsel' },
+                { id: 'last_name', name: 'Achternaam' },
+                { id: 'date_of_birth', name: 'Geboortedatum' },
+                { id: 'nationality', name: 'Nationaliteit' },
+                { id: 'photo', name: 'Foto' }
               ]},
-            { id: 'contact', name: 'Contact', uiGroup: 'persoonsgegevens', sensitivity: 'gevoelig',
+            { id: 'contact', name: 'Contact', uiGroup: 'persoonsgegevens', sensitivity: 'basis',
               fields: [
-                { id: 'contact_work', name: 'Contact (werk)', items: ['Zakelijk e-mail', 'Zakelijk telefoon'] },
-                { id: 'address', name: 'Adres / woonplaats', items: ['Woonplaats', 'Postcode', 'Straat + huisnummer'] }
+                { id: 'email', name: 'E-mailadres' },
+                { id: 'phone', name: 'Telefoonnummer' },
+                { id: 'language', name: 'Taal' },
+                { id: 'locality', name: 'Plaats' },
+                { id: 'country_of_residence', name: 'Land van vestiging' }
               ]},
-            { id: 'government_id', name: 'Overheids-ID', uiGroup: 'persoonsgegevens', sensitivity: 'zeer_gevoelig',
+            { id: 'government_id', name: 'Overheids-ID', uiGroup: 'identificatie', sensitivity: 'zeer_gevoelig',
+              allOrNothing: true,
               fields: [
-                { id: 'government_id', name: 'Overheids-ID', items: ['BSN', 'Documentnummer'] },
-                { id: 'identificatie_bsn', name: 'Identificatie (BSN/Doc.nr)', items: ['BSN', 'Documentnummer', 'Documenttype', 'Verloopdatum'] }
+                { id: 'id_type', name: 'Type ID Bewijs' },
+                { id: 'id_document_number', name: 'Documentnummer identiteitsbewijs' },
+                { id: 'id_expiration_date', name: 'Geldigheidsdatum identiteitsbewijs' },
+                { id: 'bsn', name: 'BSN / EU persoonsnummer' },
+                { id: 'vog', name: 'VOG (Verklaring omtrent gedrag)' }
               ]},
-            { id: 'employment', name: 'Arbeidsgegevens', uiGroup: 'dossier', sensitivity: 'gevoelig',
+            { id: 'employment', name: 'Arbeidsrelatie', uiGroup: 'arbeid', sensitivity: 'gevoelig',
               fields: [
-                { id: 'employment', name: 'Arbeidsgegevens', items: ['Bedrijf', 'Functie', 'Contract type'] },
-                { id: 'posted_worker', name: 'Posted Worker (WagwEU)', items: ['A1-verklaring', 'Werkvergunning', 'Detacheringsovereenkomst'] },
-                { id: 'sociale_lasten', name: 'Sociale lasten', items: ['Verzekeringsland', 'A1-status', 'Premieplicht'] }
+                { id: 'main_contractor', name: 'Hoofdaannemer' },
+                { id: 'main_contractor_kvk', name: 'Hoofdaannemer KVK-nummer' },
+                { id: 'employer', name: 'Werkgever' },
+                { id: 'employer_kvk', name: 'Werkgever KVK-nummer' },
+                { id: 'job_functions', name: 'Functies' },
+                { id: 'period_from', name: 'Inhuur-/Contractperiode: Datum vanaf' },
+                { id: 'period_to', name: 'Inhuur-/Contractperiode: Datum tot en met' },
+                { id: 'contact_person_name', name: 'Werkgever-contactpersoon: Naam' },
+                { id: 'contact_person_email', name: 'Werkgever-contactpersoon: E-mail' },
+                { id: 'contact_person_phone', name: 'Werkgever-contactpersoon: Telefoon' }
               ]},
-            { id: 'compliance', name: 'Compliance', uiGroup: 'dossier', sensitivity: 'basis',
+            { id: 'social_charges', name: 'Sociale lasten', uiGroup: 'arbeid', sensitivity: 'zeer_gevoelig',
               fields: [
-                { id: 'compliance', name: 'Compliance (status)', items: ['VCA status', 'VOG status'] }
+                { id: 'half_time_work_for_client', name: 'Werkzaamheden 50%+ bij opdrachtgever' },
+                { id: 'part_of_purchase_agreement', name: 'Onderdeel koopovereenkomst' },
+                { id: 'limosa_notification', name: 'Limosa aangifte (meldingsbewijs)' },
+                { id: 'posted_workers_registered', name: 'Gemeld bij PostedWorkers-meldloket' },
+                { id: 'socially_insured_nl', name: 'Sociaal verzekerd in Nederland' },
+                { id: 'a1_document', name: 'A1 / E101 document' },
+                { id: 'a1_document_validity', name: 'Geldigheidsdatum A1 / E101' }
               ]},
-            { id: 'time_tracking', name: 'Uren / inzet', uiGroup: 'dossier', sensitivity: 'basis',
+            { id: 'compliance', name: 'Compliance & Instructies', uiGroup: 'kwalificaties', sensitivity: 'basis',
               fields: [
-                { id: 'hours', name: 'Gewerkte uren', items: ['Gewerkte uren', 'Project toewijzing'] },
-                { id: 'gewerkte_uren', name: 'Uren overzicht', items: ['Uren per dag', 'Totaal uren', 'Projecttoewijzing'] }
+                { id: 'vca_exemption', name: 'VCA-vrijstelling (Ja/Nee)' },
+                { id: 'vca_exemption_reason', name: 'Reden van vrijstelling' },
+                { id: 'company_specific_instructions', name: 'Bedrijfsspecifieke regels' },
+                { id: 'deltalinqs_gate_instructions', name: 'Deltalinqs poortinstructies' },
+                { id: 'h2s_instructions', name: 'H2S instructies' }
               ]},
-            { id: 'access', name: 'Toegangsrechten', uiGroup: 'dossier', sensitivity: 'gevoelig',
+            { id: 'certificates', name: 'Certificaten', uiGroup: 'kwalificaties', sensitivity: 'gevoelig',
               fields: [
-                { id: 'access', name: 'Toegangsrechten', items: ['Locaties', 'Zones', 'Pasnummer'] }
-              ]},
-            { id: 'certificates', name: 'Certificaten', uiGroup: 'certificaten', sensitivity: 'gevoelig',
-              fields: [
-                { id: 'vca', name: 'VCA-certificaat' },
-                { id: 'vog', name: 'VOG' },
-                { id: 'bhv', name: 'BHV-certificaat' },
-                { id: 'werkvergunning', name: 'Werkvergunning' },
-                { id: 'rijbewijs', name: 'Rijbewijs' },
-                { id: 'vca_certificaten', name: 'VCA-certificaten (detail)', items: ['VCA-basis', 'VCA-VOL', 'Verloopdatum', 'Certificaatnummer'] }
+                { id: 'vca_certificate', name: 'VCA-certificaat' },
+                { id: 'bhv_certificate', name: 'BHV-certificaat' },
+                { id: 'work_permit', name: 'Werkvergunning' },
+                { id: 'drivers_license', name: 'Rijbewijs' }
               ]},
             { id: 'documents', name: 'Bestanden', uiGroup: 'bestanden', sensitivity: 'gevoelig',
               fields: [
-                { id: 'arbeidsovereenkomst', name: 'Arbeidsovereenkomst' },
-                { id: 'loonstroken', name: 'Loonstroken' },
-                { id: 'id_kopie', name: 'ID-document (kopie)' },
-                { id: 'a1_verklaring', name: 'A1-verklaring' },
-                { id: 'verzekeringsbewijs', name: 'Verzekeringsbewijs' }
+                { id: 'employment_contract', name: 'Arbeidsovereenkomst' },
+                { id: 'pay_slips', name: 'Loonstroken', sensitivity: 'zeer_gevoelig' },
+                { id: 'id_copy', name: 'ID-document (kopie)', sensitivity: 'zeer_gevoelig' },
+                { id: 'a1_certificate', name: 'A1-verklaring (document)' },
+                { id: 'insurance_proof', name: 'Verzekeringsbewijs' }
+              ]},
+            { id: 'access_vehicle', name: 'Toegang & Voertuig', uiGroup: 'toegang', sensitivity: 'basis',
+              fields: [
+                { id: 'license_plate', name: 'Kenteken' },
+                { id: 'license_plate_country', name: 'Landcode kenteken' },
+                { id: 'assigned_authorizations', name: 'Toegewezen autorisaties' }
               ]}
         ];
         const UI_GROUPS = [
             { id: 'persoonsgegevens', label: 'Persoonsgegevens' },
-            { id: 'dossier', label: 'Dossier' },
-            { id: 'certificaten', label: 'Certificaten' },
-            { id: 'bestanden', label: 'Bestanden' }
+            { id: 'identificatie', label: 'Identificatie' },
+            { id: 'arbeid', label: 'Arbeid' },
+            { id: 'kwalificaties', label: 'Kwalificaties' },
+            { id: 'bestanden', label: 'Bestanden' },
+            { id: 'toegang', label: 'Toegang' }
         ];
-        // Lookup: legacy field/group ID → authorization category ID
+        // Lookup: field ID → authorization category ID
         const FIELD_TO_CATEGORY = {};
         CATEGORIES.forEach(cat => { cat.fields.forEach(f => { FIELD_TO_CATEGORY[f.id] = cat.id; }); });
+        // LEGACY ALIASES: oude veld-IDs (gebruikt door huidige viewer DataField + Concept 2 derivation tables).
+        // Verdwijnen na Task 4 (nieuwe YIM-style viewer).
+        Object.assign(FIELD_TO_CATEGORY, {
+            // Identity
+            'identity': 'identity', 'foto': 'identity', 'identificatie_locatie': 'identity',
+            // Contact (address verhuist van eigen veld naar contact)
+            'contact_work': 'contact', 'address': 'contact',
+            // Government-ID (BSN-detail én VOG horen hier)
+            'identificatie_bsn': 'government_id',
+            // Arbeidsrelatie (posted_worker en sociale_lasten verhuizen)
+            'posted_worker': 'social_charges', 'sociale_lasten': 'social_charges',
+            'hours': 'social_charges', 'gewerkte_uren': 'social_charges',
+            // Certificaten (VOG verhuist naar government_id!)
+            'vca': 'certificates', 'vog': 'government_id', 'bhv': 'certificates',
+            'werkvergunning': 'certificates', 'rijbewijs': 'certificates',
+            'vca_certificaten': 'certificates',
+            // Documents
+            'arbeidsovereenkomst': 'documents', 'loonstroken': 'documents',
+            'id_kopie': 'documents', 'a1_verklaring': 'documents',
+            'verzekeringsbewijs': 'documents',
+            // Toegang
+            'access': 'access_vehicle'
+        });
         const CATEGORY_SENSITIVITY = {};
         CATEGORIES.forEach(cat => { CATEGORY_SENSITIVITY[cat.id] = cat.sensitivity; });
         const ALL_CATEGORY_IDS = CATEGORIES.map(c => c.id);
 
         const INITIAL_PRESETS = [
             { id: 'full', name: 'Volledige inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, time_tracking: true, access: true, certificates: true, documents: true } },
+              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true, access_vehicle: true } },
             { id: 'standard', name: 'Standaard inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, time_tracking: true, access: false, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: false } },
             { id: 'operational', name: 'Operationele inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, time_tracking: true, access: true, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: true } },
             { id: 'minimal', name: 'Minimale inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, time_tracking: false, access: false, certificates: true, documents: false } }
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false, access_vehicle: false } }
         ];
 
         // ============ CONCEPT C: Sensitivity Levels ============
@@ -211,16 +264,20 @@
         ];
 
         const CATEGORY_MIN_LEVEL = {
-            // Persoonsgegevens
-            identity: 1, foto: 1, nationality: 2, contact_work: 2, address: 3, government_id: 4,
-            // Dossier
-            compliance: 2, hours: 2, gewerkte_uren: 2, employment: 3, posted_worker: 3, sociale_lasten: 3,
+            // Persoonsgegevens (basis → operationeel)
+            identity: 1, foto: 1, nationality: 2, contact_work: 2, address: 3,
+            // Government-ID (zeer gevoelig)
+            government_id: 4, identificatie_bsn: 4, vog: 4,
+            // Arbeid + sociale lasten
+            compliance: 2, hours: 2, gewerkte_uren: 2, employment: 3,
+            posted_worker: 4, sociale_lasten: 4,
             // Certificaten
-            vca: 1, vca_certificaten: 1, bhv: 2, rijbewijs: 3, werkvergunning: 3, vog: 4,
+            vca: 1, vca_certificaten: 1, bhv: 2, rijbewijs: 3, werkvergunning: 3,
             // Bestanden
-            a1_verklaring: 3, verzekeringsbewijs: 3, arbeidsovereenkomst: 4, loonstroken: 4, id_kopie: 4,
-            // Legacy (used by concepts A/B/E)
-            access: 2, identificatie_locatie: 3, identificatie_bsn: 4
+            a1_verklaring: 3, verzekeringsbewijs: 3,
+            arbeidsovereenkomst: 4, loonstroken: 4, id_kopie: 4,
+            // Toegang & Voertuig (basis)
+            access: 2, identificatie_locatie: 3
         };
 
         // ============ ROLE SETTINGS DATA (from Figma design) ============
@@ -1018,51 +1075,49 @@
             );
         }
 
-        // Data Groups Configuration
-        // ============ CATEGORY HIERARCHY (Concept C V3/V4) ============
-        // Hoofdcategorie (UI) → Categorie (autorisatie) → Velden
+        // ============ CATEGORY HIERARCHY (Concept 2 V3/V4) ============
+        // Hoofdcategorie (UI) → Categorie (autorisatie) → Velden. Aligned met YIM-codebase.
         const CATEGORY_HIERARCHY = [
             {
                 id: 'persoonsgegevens', label: 'Persoonsgegevens',
                 subcategories: [
-                    { id: 'identity', name: 'Identiteit (basis)', fields: ['Voornaam', 'Achternaam', 'Geboortedatum'] },
-                    { id: 'foto', name: 'Foto', fields: ['Pasfoto', 'ID-foto'] },
-                    { id: 'nationality', name: 'Nationaliteit', fields: ['Nationaliteit', 'Vestigingsland'] },
-                    { id: 'contact_work', name: 'Contact (werk)', fields: ['Zakelijk e-mail', 'Zakelijk telefoon'] },
-                    { id: 'address', name: 'Adres / woonplaats', fields: ['Woonplaats', 'Postcode', 'Straat + huisnummer'] },
-                    { id: 'government_id', name: 'Identificatie (BSN / documentnummer)', fields: ['BSN', 'Documentnummer', 'Documenttype', 'Verloopdatum'] }
+                    { id: 'identity', name: 'Identiteit (basis)', fields: ['Voornaam', 'Initialen', 'Tussenvoegsel', 'Achternaam', 'Geboortedatum'] },
+                    { id: 'foto', name: 'Foto', fields: ['Pasfoto'] },
+                    { id: 'nationality', name: 'Nationaliteit', fields: ['Nationaliteit'] },
+                    { id: 'contact_work', name: 'Contact', fields: ['E-mailadres', 'Telefoonnummer', 'Taal'] },
+                    { id: 'address', name: 'Verblijfplaats', fields: ['Plaats', 'Land van vestiging'] }
                 ]
             },
             {
-                id: 'dossier', label: 'Dossier',
+                id: 'identificatie', label: 'Identificatie (zeer gevoelig)',
                 subcategories: [
-                    { id: 'employment', name: 'Arbeidsgegevens', fields: ['Bedrijf', 'Functie', 'Contract type', 'Startdatum'] },
-                    { id: 'posted_worker', name: 'Posted Worker (WagwEU)', fields: ['A1-verklaring', 'Werkvergunning', 'Detacheringsovereenkomst'] },
-                    { id: 'sociale_lasten', name: 'Sociale lasten', fields: ['Verzekeringsland', 'A1-status', 'Premieplicht'] },
-                    { id: 'compliance', name: 'Compliance (status)', fields: ['VCA status', 'VCA verloopdatum', 'VOG status'] },
-                    { id: 'hours', name: 'Uren / inzet', fields: ['Gewerkte uren', 'Project toewijzing'] },
-                    { id: 'gewerkte_uren', name: 'Gewerkte uren', fields: ['Uren per dag', 'Totaal uren'] }
+                    { id: 'government_id', name: 'Overheids-ID (all-or-nothing)', fields: ['Type ID Bewijs', 'Documentnummer identiteitsbewijs', 'Geldigheidsdatum', 'BSN / EU persoonsnummer', 'VOG'] }
                 ]
             },
             {
-                id: 'certificaten', label: 'Certificaten',
+                id: 'arbeid', label: 'Arbeid',
                 subcategories: [
-                    { id: 'vca', name: 'VCA-certificaat', fields: ['VCA-basis', 'VCA-VOL', 'Verloopdatum'] },
-                    { id: 'vog', name: 'VOG', fields: ['VOG status', 'Afgiftedatum'] },
-                    { id: 'bhv', name: 'BHV-certificaat', fields: ['BHV status', 'Verloopdatum'] },
-                    { id: 'werkvergunning', name: 'Werkvergunning', fields: ['Vergunningtype', 'Verloopdatum'] },
-                    { id: 'rijbewijs', name: 'Rijbewijs', fields: ['Categorie', 'Verloopdatum'] },
-                    { id: 'vca_certificaten', name: 'VCA certificaten', fields: ['VCA-basis', 'VCA-VOL', 'Certificaatnummer'] }
+                    { id: 'employment', name: 'Arbeidsrelatie', fields: ['Hoofdaannemer', 'Werkgever', 'KVK-nummers', 'Functies', 'Inhuur-/Contractperiode', 'Werkgever-contactpersoon'] },
+                    { id: 'posted_worker', name: 'Sociale lasten', fields: ['Werkzaamheden 50%+', 'Koopovereenkomst', 'Limosa aangifte', 'Posted Workers meldloket', 'Sociaal verzekerd NL', 'A1/E101 document'] }
+                ]
+            },
+            {
+                id: 'kwalificaties', label: 'Kwalificaties',
+                subcategories: [
+                    { id: 'compliance', name: 'Compliance & Instructies', fields: ['VCA-vrijstelling', 'Bedrijfsspecifieke regels', 'Deltalinqs poortinstructies', 'H2S instructies'] },
+                    { id: 'vca', name: 'Certificaten', fields: ['VCA-certificaat', 'BHV-certificaat', 'Werkvergunning', 'Rijbewijs'] }
                 ]
             },
             {
                 id: 'bestanden', label: 'Bestanden',
                 subcategories: [
-                    { id: 'arbeidsovereenkomst', name: 'Arbeidsovereenkomst', fields: ['Contract', 'Voorwaarden'] },
-                    { id: 'loonstroken', name: 'Loonstroken', fields: ['Salarisspecificatie'] },
-                    { id: 'id_kopie', name: 'ID-document', fields: ['Kopie paspoort', 'Kopie ID-kaart'] },
-                    { id: 'a1_verklaring', name: 'A1-verklaring', fields: ['A1-formulier', 'Geldigheid'] },
-                    { id: 'verzekeringsbewijs', name: 'Verzekeringsbewijs', fields: ['Polis', 'Dekkingsbewijs'] }
+                    { id: 'arbeidsovereenkomst', name: 'Bestanden', fields: ['Arbeidsovereenkomst', 'Loonstroken*', 'ID-kopie*', 'A1-verklaring', 'Verzekeringsbewijs'] }
+                ]
+            },
+            {
+                id: 'toegang', label: 'Toegang & Voertuig',
+                subcategories: [
+                    { id: 'access', name: 'Toegang & Voertuig', fields: ['Kenteken', 'Landcode', 'Toegewezen autorisaties'] }
                 ]
             }
         ];
@@ -1076,28 +1131,39 @@
                 id: 'persoonsgegevens', label: 'Persoonsgegevens',
                 groups: [
                     { id: 'grp_identity', name: 'Identiteit', subcatIds: ['identity', 'foto', 'nationality'] },
-                    { id: 'grp_contact', name: 'Contact', subcatIds: ['contact_work', 'address'] },
+                    { id: 'grp_contact', name: 'Contact', subcatIds: ['contact_work', 'address'] }
+                ]
+            },
+            {
+                id: 'identificatie', label: 'Identificatie',
+                groups: [
                     { id: 'grp_government_id', name: 'Overheids-ID', subcatIds: ['government_id'] }
                 ]
             },
             {
-                id: 'dossier', label: 'Dossier',
+                id: 'arbeid', label: 'Arbeid',
                 groups: [
-                    { id: 'grp_employment', name: 'Arbeidsgegevens', subcatIds: ['employment', 'posted_worker', 'sociale_lasten'] },
-                    { id: 'grp_compliance', name: 'Compliance', subcatIds: ['compliance'] },
-                    { id: 'grp_time_tracking', name: 'Uren', subcatIds: ['hours', 'gewerkte_uren'] }
+                    { id: 'grp_employment', name: 'Arbeidsrelatie', subcatIds: ['employment'] },
+                    { id: 'grp_social_charges', name: 'Sociale lasten', subcatIds: ['posted_worker'] }
                 ]
             },
             {
-                id: 'certificaten', label: 'Certificaten',
+                id: 'kwalificaties', label: 'Kwalificaties',
                 groups: [
-                    { id: 'grp_certificates', name: 'Certificaten', subcatIds: ['vca', 'vog', 'bhv', 'werkvergunning', 'rijbewijs', 'vca_certificaten'] }
+                    { id: 'grp_compliance', name: 'Compliance & Instructies', subcatIds: ['compliance'] },
+                    { id: 'grp_certificates', name: 'Certificaten', subcatIds: ['vca'] }
                 ]
             },
             {
                 id: 'bestanden', label: 'Bestanden',
                 groups: [
-                    { id: 'grp_documents', name: 'Documenten', subcatIds: ['arbeidsovereenkomst', 'loonstroken', 'id_kopie', 'a1_verklaring', 'verzekeringsbewijs'] }
+                    { id: 'grp_documents', name: 'Documenten', subcatIds: ['arbeidsovereenkomst'] }
+                ]
+            },
+            {
+                id: 'toegang', label: 'Toegang',
+                groups: [
+                    { id: 'grp_access', name: 'Toegang & Voertuig', subcatIds: ['access'] }
                 ]
             }
         ];
