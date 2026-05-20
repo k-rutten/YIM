@@ -616,7 +616,7 @@
 
         // ============ YIM-STYLE DOSSIER VIEW (Overzicht tab) ============
         // Spiegelt de echte YIM Blacklist dossier-layout. Visibility-engine geapplied.
-        function YIMDossierView({ role, profile, concept, canReveal, revealedFields, setRevealedFields, setAuditLog }) {
+        function YIMDossierView({ role, profile, concept, canReveal, revealedFields, setRevealedFields, setAuditLog, onEditDossier }) {
             const [activeTab, setActiveTab] = useState('Dossier');
             const tabs = ['Dossier', 'Autorisaties', 'Aanmeldingen', 'Geschiedenis', 'Credentials', 'Certificaten'];
 
@@ -783,7 +783,7 @@
                             </div>
                             <h3 className="text-[32px] font-normal text-white leading-[32px] pb-2.5">Mijn acties</h3>
                             <div className="pt-[30px] space-y-4">
-                                <button onClick={() => alert('Edit-view komt in volgende PR (Task 5).')}
+                                <button onClick={() => onEditDossier && onEditDossier()}
                                     className="w-full flex items-center gap-[20px] pl-2.5 text-white hover:opacity-80 transition-opacity text-left">
                                     <span className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -821,6 +821,265 @@
             );
         }
 
+        // ============ YIM-STYLE DOSSIER EDIT VIEW (full-screen overlay) ============
+        // YIM-stepper layout. Verborgen velden = locked. Gemaskeerde velden = oog-reveal + audit log.
+        function YIMDossierEdit({ role, profile, concept, canReveal, revealedFields, setRevealedFields, setAuditLog, onClose }) {
+            const [activeStep, setActiveStep] = useState(1);
+            const [activeSubSection, setActiveSubSection] = useState(null);
+
+            // Same visibility-engine als YIMDossierView
+            const isFieldVisible = (fieldId) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return false;
+                const effectiveCats = concept === 'A' ? profile?.allowedCategories : role.allowedCategories;
+                if (!effectiveCats?.[def.categoryId]) return false;
+                if (concept === 'G' && role._fieldOverrides && role._fieldOverrides[def.categoryId]) {
+                    if (role._fieldOverrides[def.categoryId][fieldId] === false) return false;
+                }
+                return true;
+            };
+            const isFieldSensitive = (fieldId) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return false;
+                return def.sensitivity === 'zeer_gevoelig' || def.categorySensitivity === 'zeer_gevoelig';
+            };
+
+            const handleReveal = (fieldId) => {
+                setRevealedFields(prev => ({ ...prev, [fieldId]: true }));
+                setAuditLog(prev => [...prev, {
+                    timestamp: new Date().toISOString(),
+                    role: role.name,
+                    field: FIELD_DEFS[fieldId]?.name || fieldId,
+                    action: 'reveal-edit'  // Onderscheid: reveal tijdens edit
+                }]);
+                setTimeout(() => {
+                    setRevealedFields(prev => { const n = { ...prev }; delete n[fieldId]; return n; });
+                }, 5000);
+            };
+
+            // Step structure (mirroring YIM screenshots)
+            const STEPS = [
+                {
+                    number: 1, title: 'Inhuur- of Contractperiode',
+                    description: 'De periode van de persoon die ingehuurd wordt of een contract heeft.',
+                    sections: [
+                        { title: 'Inhuur- of Contractperiode', fields: ['period_from', 'period_to'] }
+                    ]
+                },
+                {
+                    number: 2, title: 'Basis registratie',
+                    description: 'Persoonsgegevens, werkgever en contactpersoon.',
+                    sections: [
+                        { title: 'Personalia', fields: ['first_name', 'initials', 'last_name_prefix', 'last_name', 'language', 'email', 'phone'] },
+                        { title: 'Gegevens werkgever', fields: ['main_contractor', 'main_contractor_kvk', 'employer', 'employer_kvk', 'job_functions'] },
+                        { title: 'Contactpersoon (werkgever)', fields: ['contact_person_name', 'contact_person_email', 'contact_person_phone'] },
+                        { title: 'Verblijfplaats', fields: ['locality', 'country_of_residence'] }
+                    ]
+                },
+                {
+                    number: 3, title: 'Aanvullende gegevens',
+                    description: 'Identificatie, kwalificaties en certificaten.',
+                    sections: [
+                        { title: 'Identificatie', fields: ['nationality', 'date_of_birth', 'id_type', 'id_document_number', 'id_expiration_date', 'bsn', 'vog'] },
+                        { title: 'Specificatie gewerkte uren', fields: ['half_time_work_for_client', 'part_of_purchase_agreement', 'limosa_notification', 'posted_workers_registered', 'socially_insured_nl', 'a1_document', 'a1_document_validity'] },
+                        { title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
+                        { title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] }
+                    ]
+                }
+            ];
+
+            const currentStepData = STEPS.find(s => s.number === activeStep);
+
+            // Input row component: locked, masked, or normal
+            const InputRow = ({ fieldId }) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return null;
+                const visible = isFieldVisible(fieldId);
+                const sensitive = isFieldSensitive(fieldId);
+                const isRevealed = revealedFields[fieldId];
+                const value = personFields[fieldId] || '';
+
+                if (!visible) {
+                    // Verborgen veld: vergrendeld + lock-icoon + niet bewerkbaar
+                    return (
+                        <div className="grid items-center gap-4 py-3 px-4 bg-yim-50 border-b border-yim-100 last:border-0" style={{ gridTemplateColumns: '240px 1fr' }}>
+                            <label className="text-sm text-yim-500 flex items-center gap-2">
+                                <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                {def.name}
+                            </label>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-yim-400 italic">Niet bewerkbaar — geen inzage</span>
+                                <span className="text-[10px] font-semibold text-yim-400 bg-yim-100 px-2 py-0.5 rounded uppercase tracking-wider">Vergrendeld</span>
+                            </div>
+                        </div>
+                    );
+                }
+
+                const showValue = !sensitive || isRevealed;
+                const displayValue = showValue ? value : '••••••••';
+
+                return (
+                    <div className="grid items-center gap-4 py-3 px-4 border-b border-yim-100 last:border-0 group hover:bg-yim-50/40" style={{ gridTemplateColumns: '240px 1fr' }}>
+                        <label className="text-sm font-medium text-yim-700 flex items-center gap-2">
+                            {def.name}
+                            {sensitive && !isRevealed && (
+                                <svg className="w-3.5 h-3.5 text-yim-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            )}
+                            {isRevealed && (
+                                <span className="flex items-center gap-1 text-[10px] text-yim-green font-semibold uppercase tracking-wider">5s</span>
+                            )}
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <input type="text" value={displayValue} readOnly={!showValue}
+                                className={`flex-1 px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-yim-500 focus:border-yim-500 ${
+                                    showValue ? 'border-yim-300 bg-white text-yim-700' : 'border-yim-200 bg-yim-50 text-yim-300 italic'
+                                }`}
+                                onChange={() => {}}
+                            />
+                            {sensitive && !isRevealed && canReveal && (
+                                <button onClick={() => handleReveal(fieldId)}
+                                    className="px-3 py-2 text-xs font-medium text-yim-600 hover:text-yim-700 bg-yim-50 hover:bg-yim-100 border border-yim-200 rounded transition-colors flex items-center gap-1">
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    Toon (5s)
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col">
+                    {/* Header */}
+                    <div className="bg-white border-b border-yim-200 px-6 py-4 flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-4">
+                            <button onClick={onClose} className="p-2 text-yim-300 hover:text-yim-600 hover:bg-yim-100 rounded-lg transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                            <div>
+                                <h2 className="text-lg font-semibold text-yim-700">Contractor dossier bewerken</h2>
+                                <p className="text-sm text-yim-500">Jan de Vries · ABC Bouw B.V. · Rol: {role.name}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-yim-500 italic">Wijzigingen in deze prototype-view zijn niet persistent</span>
+                        </div>
+                    </div>
+
+                    {/* Body: stepper sidebar + content */}
+                    <div className="flex flex-1 overflow-hidden">
+                        {/* Stepper sidebar */}
+                        <div className="w-[280px] flex-shrink-0 bg-yim-700 text-white overflow-y-auto" style={{ borderRadius: '0 0 110px 0' }}>
+                            <div className="px-6 pt-12 pb-8">
+                                <h3 className="text-2xl font-bold mb-8 pr-8">Contractor dossier bewerken</h3>
+                                <ul className="space-y-1">
+                                    {STEPS.map(step => {
+                                        const isActive = step.number === activeStep;
+                                        const isComplete = step.number < activeStep;
+                                        return (
+                                            <li key={step.number}>
+                                                <button onClick={() => { setActiveStep(step.number); setActiveSubSection(null); }}
+                                                    className={`w-full text-left px-4 py-3 rounded transition-colors flex items-center gap-3 ${
+                                                        isActive ? 'bg-white/10' : 'hover:bg-white/5'
+                                                    }`}>
+                                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                                                        isComplete ? 'bg-yim-green text-white' : isActive ? 'bg-white text-yim-700' : 'bg-white/20 text-white'
+                                                    }`}>
+                                                        {isComplete ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : step.number}
+                                                    </span>
+                                                    <span className={`text-sm ${isActive ? 'font-bold' : ''}`}>{step.title}</span>
+                                                </button>
+                                                {isActive && step.sections.length > 1 && (
+                                                    <ul className="ml-10 mt-1 space-y-0.5 mb-2">
+                                                        {step.sections.map((s, idx) => (
+                                                            <li key={idx}>
+                                                                <button onClick={() => setActiveSubSection(idx)}
+                                                                    className={`text-xs py-1.5 px-2 rounded w-full text-left transition-colors ${
+                                                                        activeSubSection === idx ? 'text-yellow-300 font-bold bg-white/10' : 'text-white/70 hover:text-white'
+                                                                    }`}>
+                                                                    {s.title}
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Main form area */}
+                        <div className="flex-1 overflow-y-auto bg-yim-50/30 p-8">
+                            <div className="max-w-4xl mx-auto">
+                                {/* Step intro */}
+                                <div className="flex items-start gap-4 mb-6">
+                                    <span className="w-8 h-8 rounded-full bg-yim-100 text-yim-700 flex items-center justify-center font-bold text-sm">
+                                        {currentStepData.number}
+                                    </span>
+                                    <div>
+                                        <h1 className="text-3xl font-bold text-yim-700">{currentStepData.title}</h1>
+                                        <p className="text-sm text-yim-500 mt-1">{currentStepData.description}</p>
+                                    </div>
+                                </div>
+
+                                {/* Sections */}
+                                <div className="space-y-6">
+                                    {currentStepData.sections.map((section, idx) => {
+                                        const visibleCount = section.fields.filter(f => isFieldVisible(f)).length;
+                                        const hiddenCount = section.fields.length - visibleCount;
+                                        return (
+                                            <div key={idx} className="bg-white rounded-lg border border-yim-200 overflow-hidden">
+                                                <div className="px-5 py-3 border-b border-yim-100 flex items-center justify-between bg-yim-50/50">
+                                                    <h3 className="text-lg font-bold text-yim-700">{section.title}</h3>
+                                                    {hiddenCount > 0 && (
+                                                        <span className="text-xs font-medium text-yim-500 bg-yim-100 px-2 py-0.5 rounded flex items-center gap-1.5">
+                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                            {hiddenCount} verborgen
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    {section.fields.map(f => <InputRow key={f} fieldId={f} />)}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="bg-white border-t border-yim-200 px-6 py-4 flex items-center justify-between shrink-0">
+                        <button onClick={onClose} className="px-4 py-2 text-sm text-yim-600 hover:bg-yim-100 rounded-lg">
+                            ← Terug naar overzicht
+                        </button>
+                        <div className="flex items-center gap-2">
+                            {activeStep > 1 && (
+                                <button onClick={() => { setActiveStep(activeStep - 1); setActiveSubSection(null); }} className="px-4 py-2 text-sm text-yim-600 hover:bg-yim-100 rounded-lg">
+                                    Vorige
+                                </button>
+                            )}
+                            {activeStep < STEPS.length && (
+                                <button onClick={() => { setActiveStep(activeStep + 1); setActiveSubSection(null); }} className="px-5 py-2 bg-yim-500 text-white text-sm font-medium rounded-lg hover:bg-yim-600">
+                                    Volgende
+                                </button>
+                            )}
+                            {activeStep === STEPS.length && (
+                                <button onClick={onClose} className="px-5 py-2 bg-yim-green text-white text-sm font-medium rounded-lg hover:bg-yim-green/80">
+                                    Indienen (demo)
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         function App({ roles, setRoles, visibilityProfiles, setVisibilityProfiles, currentTab, setCurrentTab, concept, setConcept }) {
             const [currentRole, setCurrentRole] = useState('admin');
             const [showHelp, setShowHelp] = useState(true);
@@ -834,6 +1093,7 @@
                 G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn. Per categorie veld-niveau drill-down beschikbaar (behalve Overheids-ID = all-or-nothing).', what: 'Categorieën worden afgeleid. Risico-balk toont gevoeligheidsniveau van actieve selectie. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid + veld-controle' },
             };
             const [revealedFields, setRevealedFields] = useState({});
+            const [editMode, setEditMode] = useState(false);
 
             // Match role config to preset name for viewer badges
             const matchPresetForViewer = (r) => INITIAL_PRESETS.find(p =>
@@ -1256,7 +1516,22 @@
                             revealedFields={revealedFields}
                             setRevealedFields={setRevealedFields}
                             setAuditLog={setAuditLog}
+                            onEditDossier={() => setEditMode(true)}
                         />
+
+                        {/* ===== Edit-view (overlay) ===== */}
+                        {editMode && (
+                            <YIMDossierEdit
+                                role={role}
+                                profile={profile}
+                                concept={concept}
+                                canReveal={canReveal}
+                                revealedFields={revealedFields}
+                                setRevealedFields={setRevealedFields}
+                                setAuditLog={setAuditLog}
+                                onClose={() => setEditMode(false)}
+                            />
+                        )}
                         </>
                         )}
 
