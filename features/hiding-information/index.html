@@ -80,6 +80,88 @@
             }
         };
 
+        // ============ YIM-STYLE PERSON DATA (codebase-aligned veldnamen) ============
+        // Per nieuwe field ID een waarde — gebruikt door de Overzicht-tab (YIM-style dossier).
+        const personFields = {
+            // identity
+            first_name: 'Jan',
+            initials: 'J.',
+            last_name_prefix: 'de',
+            last_name: 'Vries',
+            date_of_birth: '15-03-1985',
+            nationality: 'Nederlandse',
+            photo: 'Pasfoto beschikbaar',
+            // contact
+            email: 'jan.devries@example.nl',
+            phone: '+31 6 1234 5678',
+            language: 'Nederlands',
+            locality: 'Rotterdam',
+            country_of_residence: 'Nederland',
+            // government_id (all-or-nothing)
+            id_type: 'Paspoort',
+            id_document_number: 'NX12345678',
+            id_expiration_date: '17-10-2030',
+            bsn: '123 45 6789',
+            vog: 'Geldig (afgegeven 15-01-2024)',
+            // employment
+            main_contractor: 'Shell Nederland B.V.',
+            main_contractor_kvk: '24123456',
+            employer: 'ABC Bouw B.V.',
+            employer_kvk: '12345678',
+            job_functions: 'Projectleider, Veiligheidskundige',
+            period_from: '02-01-2025',
+            period_to: '31-12-2026',
+            contact_person_name: 'Patrick van der Berg',
+            contact_person_email: 'patrick@abcbouw.nl',
+            contact_person_phone: '+31 10 1234567',
+            // social_charges
+            half_time_work_for_client: 'Ja',
+            part_of_purchase_agreement: 'Nee',
+            limosa_notification: 'Niet van toepassing',
+            posted_workers_registered: 'Onbekend',
+            socially_insured_nl: 'Ja',
+            a1_document: 'Niet ingediend',
+            a1_document_validity: 'N.v.t.',
+            // compliance
+            vca_exemption: 'Ja',
+            vca_exemption_reason: 'In bezit van geldige certificering',
+            company_specific_instructions: 'Voltooid (Q1 2025)',
+            deltalinqs_gate_instructions: 'Niet vereist',
+            h2s_instructions: 'Niet vereist',
+            // certificates
+            vca_certificate: 'VCA-VOL · Geldig tot 31-12-2025',
+            bhv_certificate: 'Geldig tot 15-06-2025',
+            work_permit: 'N.v.t. (NL nationaliteit)',
+            drivers_license: 'B (geldig)',
+            // documents
+            employment_contract: 'Arbeidsovereenkomst-2023-001.pdf',
+            pay_slips: '12 loonstroken beschikbaar',
+            id_copy: 'Paspoort_kopie.pdf',
+            a1_certificate: 'Niet ingediend',
+            insurance_proof: 'Verzekeringsbewijs-2024.pdf',
+            // access_vehicle
+            license_plate: '12-AB-345',
+            license_plate_country: 'NL',
+            assigned_authorizations: 'Toegangsregel developer 4 (verlopen)'
+        };
+
+        // YIM-secties (matching de Blacklist dossier-layout). Elke sectie heeft fields uit CATEGORIES.
+        const YIM_SECTIONS = [
+            { id: 'period', title: 'Inhuur- of Contractperiode', fields: ['period_from', 'period_to'] },
+            { id: 'personalia', title: 'Personalia', fields: ['first_name', 'initials', 'last_name_prefix', 'last_name', 'language', 'email', 'phone'] },
+            { id: 'employer', title: 'Gegevens werkgever', fields: ['main_contractor', 'main_contractor_kvk', 'employer', 'employer_kvk', 'job_functions'] },
+            { id: 'contact_person', title: 'Contactpersoon (werkgever)', fields: ['contact_person_name', 'contact_person_email', 'contact_person_phone'] },
+            { id: 'address', title: 'Verblijfplaats', fields: ['locality', 'country_of_residence'] },
+            { id: 'identification', title: 'Identificatie', fields: ['nationality', 'date_of_birth', 'id_type', 'id_document_number', 'id_expiration_date', 'bsn', 'vog'] },
+            { id: 'specification', title: 'Specificatie gewerkte uren', fields: ['half_time_work_for_client', 'part_of_purchase_agreement', 'limosa_notification', 'posted_workers_registered', 'socially_insured_nl', 'a1_document', 'a1_document_validity'] },
+            { id: 'compliance', title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
+            { id: 'certificates', title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] },
+            { id: 'documents', title: 'Bestanden', fields: ['employment_contract', 'pay_slips', 'id_copy', 'a1_certificate', 'insurance_proof'] },
+            { id: 'access', title: 'Toegang & Voertuig', fields: ['license_plate', 'license_plate_country', 'assigned_authorizations'] }
+        ];
+
+        // FIELD_DEFS wordt aangemaakt na CATEGORIES declaratie (zie hieronder)
+
         // ============ CONCEPT A: Shared Visibility Profiles (linked to roles) ============
         // Profiles use 9 allowedCategories. Cross-company access is handled via role assignment elsewhere.
         const initialVisibilityProfiles = [
@@ -88,28 +170,32 @@
                 name: 'Volledige inzage',
                 description: 'Alle velden en dossieronderdelen zichtbaar',
                 canReveal: true,
-                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, time_tracking: true, access: true, certificates: true, documents: true }
+                canEditDossier: true,
+                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true, access_vehicle: true }
             },
             {
                 id: 'standard',
                 name: 'Standaard inzage',
                 description: 'Basis- en werkgerelateerde velden, gevoelige data verborgen',
                 canReveal: true,
-                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, time_tracking: true, access: false, certificates: true, documents: false }
+                canEditDossier: true,
+                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: false }
             },
             {
                 id: 'operational',
                 name: 'Operationele inzage',
-                description: 'Basisidentificatie, compliance en uren',
+                description: 'Basisidentificatie, compliance en toegang',
                 canReveal: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, time_tracking: true, access: true, certificates: true, documents: false }
+                canEditDossier: false,
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: true }
             },
             {
                 id: 'minimal',
                 name: 'Minimale inzage',
                 description: 'Alleen naam en VCA-certificaten',
                 canReveal: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, time_tracking: false, access: false, certificates: true, documents: false }
+                canEditDossier: false,
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false, access_vehicle: false }
             }
         ];
 
@@ -122,84 +208,144 @@
             guest: { name: "Guest", description: "Basis verificatie", visibilityProfileId: 'minimal' }
         };
 
-        // ============ CONCEPT B: Categories on roles, presets as UX helper ============
-        // 9 authorization categories grouped under 4 UI headers
+        // ============ AUTHORIZATION CATEGORIES (9, codebase-aligned) ============
+        // Categorie-namen + velden komen 1:1 uit de YIM-codebase (Person.cs, registration.ts, translations).
+        // Drill-down per veld is alleen in Concept 3 (Task 2). Government-ID = all-or-nothing.
         const CATEGORIES = [
             { id: 'identity', name: 'Identiteit', uiGroup: 'persoonsgegevens', sensitivity: 'basis',
               fields: [
-                { id: 'identity', name: 'Identiteit (basis)', items: ['Voornaam', 'Achternaam', 'Geboortedatum'] },
-                { id: 'foto', name: 'Foto', items: ['Pasfoto', 'ID-foto'] },
-                { id: 'identificatie_locatie', name: 'Nationaliteit', items: ['Nationaliteit', 'Vestigingsland', 'Woonplaats'] }
+                { id: 'first_name', name: 'Voornaam' },
+                { id: 'initials', name: 'Initialen' },
+                { id: 'last_name_prefix', name: 'Tussenvoegsel' },
+                { id: 'last_name', name: 'Achternaam' },
+                { id: 'date_of_birth', name: 'Geboortedatum' },
+                { id: 'nationality', name: 'Nationaliteit' },
+                { id: 'photo', name: 'Foto' }
               ]},
-            { id: 'contact', name: 'Contact', uiGroup: 'persoonsgegevens', sensitivity: 'gevoelig',
+            { id: 'contact', name: 'Contact', uiGroup: 'persoonsgegevens', sensitivity: 'basis',
               fields: [
-                { id: 'contact_work', name: 'Contact (werk)', items: ['Zakelijk e-mail', 'Zakelijk telefoon'] },
-                { id: 'address', name: 'Adres / woonplaats', items: ['Woonplaats', 'Postcode', 'Straat + huisnummer'] }
+                { id: 'email', name: 'E-mailadres' },
+                { id: 'phone', name: 'Telefoonnummer' },
+                { id: 'language', name: 'Taal' },
+                { id: 'locality', name: 'Plaats' },
+                { id: 'country_of_residence', name: 'Land van vestiging' }
               ]},
-            { id: 'government_id', name: 'Overheids-ID', uiGroup: 'persoonsgegevens', sensitivity: 'zeer_gevoelig',
+            { id: 'government_id', name: 'Overheids-ID', uiGroup: 'identificatie', sensitivity: 'zeer_gevoelig',
               fields: [
-                { id: 'government_id', name: 'Overheids-ID', items: ['BSN', 'Documentnummer'] },
-                { id: 'identificatie_bsn', name: 'Identificatie (BSN/Doc.nr)', items: ['BSN', 'Documentnummer', 'Documenttype', 'Verloopdatum'] }
+                { id: 'id_type', name: 'Type ID Bewijs' },
+                { id: 'id_document_number', name: 'Documentnummer identiteitsbewijs' },
+                { id: 'id_expiration_date', name: 'Geldigheidsdatum identiteitsbewijs' },
+                { id: 'bsn', name: 'BSN / EU persoonsnummer', policyLocked: true, policyReason: 'Door policy uitgeschakeld — BSN nooit zichtbaar voor cross-company rollen' },
+                { id: 'vog', name: 'VOG (Verklaring omtrent gedrag)' }
               ]},
-            { id: 'employment', name: 'Arbeidsgegevens', uiGroup: 'dossier', sensitivity: 'gevoelig',
+            { id: 'employment', name: 'Arbeidsrelatie', uiGroup: 'arbeid', sensitivity: 'gevoelig',
               fields: [
-                { id: 'employment', name: 'Arbeidsgegevens', items: ['Bedrijf', 'Functie', 'Contract type'] },
-                { id: 'posted_worker', name: 'Posted Worker (WagwEU)', items: ['A1-verklaring', 'Werkvergunning', 'Detacheringsovereenkomst'] },
-                { id: 'sociale_lasten', name: 'Sociale lasten', items: ['Verzekeringsland', 'A1-status', 'Premieplicht'] }
+                { id: 'main_contractor', name: 'Hoofdaannemer' },
+                { id: 'main_contractor_kvk', name: 'Hoofdaannemer KVK-nummer' },
+                { id: 'employer', name: 'Werkgever' },
+                { id: 'employer_kvk', name: 'Werkgever KVK-nummer' },
+                { id: 'job_functions', name: 'Functies' },
+                { id: 'period_from', name: 'Inhuur-/Contractperiode: Datum vanaf' },
+                { id: 'period_to', name: 'Inhuur-/Contractperiode: Datum tot en met' },
+                { id: 'contact_person_name', name: 'Werkgever-contactpersoon: Naam' },
+                { id: 'contact_person_email', name: 'Werkgever-contactpersoon: E-mail' },
+                { id: 'contact_person_phone', name: 'Werkgever-contactpersoon: Telefoon' }
               ]},
-            { id: 'compliance', name: 'Compliance', uiGroup: 'dossier', sensitivity: 'basis',
+            { id: 'social_charges', name: 'Sociale lasten', uiGroup: 'arbeid', sensitivity: 'zeer_gevoelig',
               fields: [
-                { id: 'compliance', name: 'Compliance (status)', items: ['VCA status', 'VOG status'] }
+                { id: 'half_time_work_for_client', name: 'Werkzaamheden 50%+ bij opdrachtgever' },
+                { id: 'part_of_purchase_agreement', name: 'Onderdeel koopovereenkomst' },
+                { id: 'limosa_notification', name: 'Limosa aangifte (meldingsbewijs)' },
+                { id: 'posted_workers_registered', name: 'Gemeld bij PostedWorkers-meldloket' },
+                { id: 'socially_insured_nl', name: 'Sociaal verzekerd in Nederland' },
+                { id: 'a1_document', name: 'A1 / E101 document' },
+                { id: 'a1_document_validity', name: 'Geldigheidsdatum A1 / E101' }
               ]},
-            { id: 'time_tracking', name: 'Uren / inzet', uiGroup: 'dossier', sensitivity: 'basis',
+            { id: 'compliance', name: 'Compliance & Instructies', uiGroup: 'kwalificaties', sensitivity: 'basis',
               fields: [
-                { id: 'hours', name: 'Gewerkte uren', items: ['Gewerkte uren', 'Project toewijzing'] },
-                { id: 'gewerkte_uren', name: 'Uren overzicht', items: ['Uren per dag', 'Totaal uren', 'Projecttoewijzing'] }
+                { id: 'vca_exemption', name: 'VCA-vrijstelling (Ja/Nee)' },
+                { id: 'vca_exemption_reason', name: 'Reden van vrijstelling' },
+                { id: 'company_specific_instructions', name: 'Bedrijfsspecifieke regels' },
+                { id: 'deltalinqs_gate_instructions', name: 'Deltalinqs poortinstructies' },
+                { id: 'h2s_instructions', name: 'H2S instructies' }
               ]},
-            { id: 'access', name: 'Toegangsrechten', uiGroup: 'dossier', sensitivity: 'gevoelig',
+            { id: 'certificates', name: 'Certificaten', uiGroup: 'kwalificaties', sensitivity: 'gevoelig',
               fields: [
-                { id: 'access', name: 'Toegangsrechten', items: ['Locaties', 'Zones', 'Pasnummer'] }
-              ]},
-            { id: 'certificates', name: 'Certificaten', uiGroup: 'certificaten', sensitivity: 'gevoelig',
-              fields: [
-                { id: 'vca', name: 'VCA-certificaat' },
-                { id: 'vog', name: 'VOG' },
-                { id: 'bhv', name: 'BHV-certificaat' },
-                { id: 'werkvergunning', name: 'Werkvergunning' },
-                { id: 'rijbewijs', name: 'Rijbewijs' },
-                { id: 'vca_certificaten', name: 'VCA-certificaten (detail)', items: ['VCA-basis', 'VCA-VOL', 'Verloopdatum', 'Certificaatnummer'] }
+                { id: 'vca_certificate', name: 'VCA-certificaat' },
+                { id: 'bhv_certificate', name: 'BHV-certificaat' },
+                { id: 'work_permit', name: 'Werkvergunning' },
+                { id: 'drivers_license', name: 'Rijbewijs' }
               ]},
             { id: 'documents', name: 'Bestanden', uiGroup: 'bestanden', sensitivity: 'gevoelig',
               fields: [
-                { id: 'arbeidsovereenkomst', name: 'Arbeidsovereenkomst' },
-                { id: 'loonstroken', name: 'Loonstroken' },
-                { id: 'id_kopie', name: 'ID-document (kopie)' },
-                { id: 'a1_verklaring', name: 'A1-verklaring' },
-                { id: 'verzekeringsbewijs', name: 'Verzekeringsbewijs' }
+                { id: 'employment_contract', name: 'Arbeidsovereenkomst' },
+                { id: 'pay_slips', name: 'Loonstroken', sensitivity: 'zeer_gevoelig' },
+                { id: 'id_copy', name: 'ID-document (kopie)', sensitivity: 'zeer_gevoelig' },
+                { id: 'a1_certificate', name: 'A1-verklaring (document)' },
+                { id: 'insurance_proof', name: 'Verzekeringsbewijs' }
+              ]},
+            { id: 'access_vehicle', name: 'Toegang & Voertuig', uiGroup: 'toegang', sensitivity: 'basis',
+              fields: [
+                { id: 'license_plate', name: 'Kenteken' },
+                { id: 'license_plate_country', name: 'Landcode kenteken' },
+                { id: 'assigned_authorizations', name: 'Toegewezen autorisaties' }
               ]}
         ];
         const UI_GROUPS = [
             { id: 'persoonsgegevens', label: 'Persoonsgegevens' },
-            { id: 'dossier', label: 'Dossier' },
-            { id: 'certificaten', label: 'Certificaten' },
-            { id: 'bestanden', label: 'Bestanden' }
+            { id: 'identificatie', label: 'Identificatie' },
+            { id: 'arbeid', label: 'Arbeid' },
+            { id: 'kwalificaties', label: 'Kwalificaties' },
+            { id: 'bestanden', label: 'Bestanden' },
+            { id: 'toegang', label: 'Toegang' }
         ];
-        // Lookup: legacy field/group ID → authorization category ID
+        // Lookup: field ID → authorization category ID
         const FIELD_TO_CATEGORY = {};
         CATEGORIES.forEach(cat => { cat.fields.forEach(f => { FIELD_TO_CATEGORY[f.id] = cat.id; }); });
+        // LEGACY ALIASES: oude veld-IDs (gebruikt door huidige viewer DataField + Concept 2 derivation tables).
+        // Verdwijnen na Task 4 (nieuwe YIM-style viewer).
+        Object.assign(FIELD_TO_CATEGORY, {
+            // Identity
+            'identity': 'identity', 'foto': 'identity', 'identificatie_locatie': 'identity',
+            // Contact (address verhuist van eigen veld naar contact)
+            'contact_work': 'contact', 'address': 'contact',
+            // Government-ID (BSN-detail én VOG horen hier)
+            'identificatie_bsn': 'government_id',
+            // Arbeidsrelatie (posted_worker en sociale_lasten verhuizen)
+            'posted_worker': 'social_charges', 'sociale_lasten': 'social_charges',
+            'hours': 'social_charges', 'gewerkte_uren': 'social_charges',
+            // Certificaten (VOG verhuist naar government_id!)
+            'vca': 'certificates', 'vog': 'government_id', 'bhv': 'certificates',
+            'werkvergunning': 'certificates', 'rijbewijs': 'certificates',
+            'vca_certificaten': 'certificates',
+            // Documents
+            'arbeidsovereenkomst': 'documents', 'loonstroken': 'documents',
+            'id_kopie': 'documents', 'a1_verklaring': 'documents',
+            'verzekeringsbewijs': 'documents',
+            // Toegang
+            'access': 'access_vehicle'
+        });
         const CATEGORY_SENSITIVITY = {};
         CATEGORIES.forEach(cat => { CATEGORY_SENSITIVITY[cat.id] = cat.sensitivity; });
         const ALL_CATEGORY_IDS = CATEGORIES.map(c => c.id);
 
+        // Lookup: field ID → field definition (incl. category) — voor YIM-style viewer + edit
+        const FIELD_DEFS = {};
+        CATEGORIES.forEach(cat => {
+            cat.fields.forEach(f => {
+                FIELD_DEFS[f.id] = { ...f, categoryId: cat.id, categorySensitivity: cat.sensitivity, isAllOrNothing: cat.allOrNothing === true };
+            });
+        });
+
         const INITIAL_PRESETS = [
             { id: 'full', name: 'Volledige inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, time_tracking: true, access: true, certificates: true, documents: true } },
+              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true, access_vehicle: true } },
             { id: 'standard', name: 'Standaard inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, time_tracking: true, access: false, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: false } },
             { id: 'operational', name: 'Operationele inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, time_tracking: true, access: true, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: true } },
             { id: 'minimal', name: 'Minimale inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, time_tracking: false, access: false, certificates: true, documents: false } }
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false, access_vehicle: false } }
         ];
 
         // ============ CONCEPT C: Sensitivity Levels ============
@@ -211,16 +357,20 @@
         ];
 
         const CATEGORY_MIN_LEVEL = {
-            // Persoonsgegevens
-            identity: 1, foto: 1, nationality: 2, contact_work: 2, address: 3, government_id: 4,
-            // Dossier
-            compliance: 2, hours: 2, gewerkte_uren: 2, employment: 3, posted_worker: 3, sociale_lasten: 3,
+            // Persoonsgegevens (basis → operationeel)
+            identity: 1, foto: 1, nationality: 2, contact_work: 2, address: 3,
+            // Government-ID (zeer gevoelig)
+            government_id: 4, identificatie_bsn: 4, vog: 4,
+            // Arbeid + sociale lasten
+            compliance: 2, hours: 2, gewerkte_uren: 2, employment: 3,
+            posted_worker: 4, sociale_lasten: 4,
             // Certificaten
-            vca: 1, vca_certificaten: 1, bhv: 2, rijbewijs: 3, werkvergunning: 3, vog: 4,
+            vca: 1, vca_certificaten: 1, bhv: 2, rijbewijs: 3, werkvergunning: 3,
             // Bestanden
-            a1_verklaring: 3, verzekeringsbewijs: 3, arbeidsovereenkomst: 4, loonstroken: 4, id_kopie: 4,
-            // Legacy (used by concepts A/B/E)
-            access: 2, identificatie_locatie: 3, identificatie_bsn: 4
+            a1_verklaring: 3, verzekeringsbewijs: 3,
+            arbeidsovereenkomst: 4, loonstroken: 4, id_kopie: 4,
+            // Toegang & Voertuig (basis)
+            access: 2, identificatie_locatie: 3
         };
 
         // ============ ROLE SETTINGS DATA (from Figma design) ============
@@ -469,6 +619,481 @@
         initialRolesA.contractor.roleSettings = createSecurityRoleSettings();
         initialRolesA.guest.roleSettings = createMinimalRoleSettings();
 
+        // ============ YIM-STYLE DOSSIER VIEW (Overzicht tab) ============
+        // Spiegelt de echte YIM Blacklist dossier-layout. Visibility-engine geapplied.
+        function YIMDossierView({ role, profile, concept, canReveal, canEditDossier, revealedFields, setRevealedFields, setAuditLog, onEditDossier }) {
+            const [activeTab, setActiveTab] = useState('Dossier');
+            const tabs = ['Dossier', 'Autorisaties', 'Aanmeldingen', 'Geschiedenis', 'Credentials', 'Certificaten'];
+
+            // Helper: bepaal of een veld zichtbaar is voor huidige rol
+            const isFieldVisible = (fieldId) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return false;
+                // Categorie-niveau check
+                const effectiveCats = concept === 'A' ? profile?.allowedCategories : role.allowedCategories;
+                const catAllowed = !!effectiveCats?.[def.categoryId];
+                if (!catAllowed) return false;
+                // Concept 3 veld-overrides
+                if (concept === 'G' && role._fieldOverrides && role._fieldOverrides[def.categoryId]) {
+                    const fOverride = role._fieldOverrides[def.categoryId][fieldId];
+                    if (fOverride === false) return false;
+                }
+                return true;
+            };
+
+            // Helper: is het veld zeer gevoelig (toon masking + reveal)
+            const isFieldSensitive = (fieldId) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return false;
+                return def.sensitivity === 'zeer_gevoelig' || def.categorySensitivity === 'zeer_gevoelig';
+            };
+
+            const handleReveal = (fieldId) => {
+                const key = fieldId;
+                setRevealedFields(prev => ({ ...prev, [key]: true }));
+                setAuditLog(prev => [...prev, {
+                    timestamp: new Date().toISOString(),
+                    role: role.name,
+                    field: FIELD_DEFS[fieldId]?.name || fieldId,
+                    action: 'reveal'
+                }]);
+                setTimeout(() => {
+                    setRevealedFields(prev => { const n = { ...prev }; delete n[key]; return n; });
+                }, 5000);
+            };
+
+            // DRow component (zoals blacklist)
+            const DRow = ({ fieldId }) => {
+                if (!isFieldVisible(fieldId)) return null;
+                const def = FIELD_DEFS[fieldId];
+                const rawValue = personFields[fieldId] || '—';
+                const sensitive = isFieldSensitive(fieldId);
+                const isRevealed = revealedFields[fieldId];
+                const showValue = !sensitive || isRevealed;
+                const displayValue = showValue ? rawValue : '••••••••';
+
+                return (
+                    <div className="flex border-b border-yim-100 py-3 group hover:bg-yim-50/50 transition-colors">
+                        <div className="w-1/3 text-sm text-yim-900/60 pl-6 font-normal flex items-center gap-2">
+                            {def?.name || fieldId}
+                            {sensitive && !isRevealed && (
+                                <svg className="w-3.5 h-3.5 text-yim-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            )}
+                            {isRevealed && (
+                                <span className="flex items-center gap-1 text-[10px] text-yim-green font-semibold uppercase tracking-wider">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    5s
+                                </span>
+                            )}
+                        </div>
+                        <div className="w-2/3 flex items-center justify-between pr-6">
+                            <span className={`text-sm font-semibold ${showValue ? 'text-yim-700' : 'text-yim-300'}`}>{displayValue}</span>
+                            {sensitive && !isRevealed && canReveal && (
+                                <button onClick={() => handleReveal(fieldId)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity px-2.5 py-1 text-[11px] font-medium text-yim-500 hover:text-yim-700 hover:bg-yim-100 rounded">
+                                    Toon (5s)
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Section component
+            const Section = ({ title, fields }) => {
+                const visibleFields = fields.filter(f => isFieldVisible(f));
+                if (visibleFields.length === 0) {
+                    return (
+                        <div className="bg-white rounded-[10px] border border-yim-200 overflow-hidden mb-6 opacity-60">
+                            <div className="flex items-center justify-between px-6 py-5 border-b border-yim-100">
+                                <h3 className="text-2xl font-bold text-yim-700">{title}</h3>
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-yim-500 bg-yim-100 px-3 py-1 rounded-full">
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                    Geen inzage
+                                </span>
+                            </div>
+                            <p className="px-6 py-4 text-sm text-yim-500 italic">Geen velden in deze sectie zichtbaar voor uw rol.</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="bg-white rounded-[10px] border border-yim-200 overflow-hidden mb-6">
+                        <h3 className="text-2xl font-bold text-yim-700 px-6 py-5 border-b border-yim-100">{title}</h3>
+                        <div>{fields.map(f => <DRow key={f} fieldId={f} />)}</div>
+                    </div>
+                );
+            };
+
+            // Personnel header — naam toont alleen als identity zichtbaar
+            const showName = isFieldVisible('first_name') || isFieldVisible('last_name');
+            const fullName = showName ? `${personFields.first_name} ${personFields.last_name_prefix} ${personFields.last_name}` : '••••••••';
+            const initials = showName ? 'JV' : '••';
+            const showEmployer = isFieldVisible('employer');
+            const employerLabel = showEmployer ? personFields.employer : '••••••••';
+
+            return (
+                <div className="flex gap-8">
+                    {/* Main content */}
+                    <div className="flex-1 min-w-0">
+                        {/* Person header */}
+                        <div className="flex gap-6 mb-2">
+                            <div className="w-[90px] h-[120px] bg-yim-200 rounded flex-shrink-0 flex items-center justify-center text-yim-400 text-3xl font-bold">
+                                {initials}
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-1 bg-yim-500 rounded-full flex-shrink-0"></div>
+                                <div>
+                                    <h1 className="text-[38px] font-bold text-yim-700 leading-tight">{fullName}</h1>
+                                    <p className="text-base text-yim-500 mt-1">Contractor • {employerLabel}</p>
+                                    <p className="text-sm text-yim-400 mt-1">Laatst bijgewerkt op 17 januari 2025 11:15</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="border-b border-yim-300 flex gap-0 mb-8 mt-6">
+                            {tabs.map(t => (
+                                <button key={t} onClick={() => setActiveTab(t)}
+                                    className={`px-6 py-2.5 text-base font-semibold whitespace-nowrap border-b-[3px] transition-colors ${
+                                        activeTab === t ? 'text-yim-600 border-yim-500' : 'text-yim-500 border-transparent hover:text-yim-600'
+                                    }`}>{t}</button>
+                            ))}
+                        </div>
+
+                        {/* Tab content */}
+                        {activeTab === 'Dossier' && (
+                            <div>
+                                {YIM_SECTIONS.map(sec => (
+                                    <Section key={sec.id} title={sec.title} fields={sec.fields} />
+                                ))}
+                            </div>
+                        )}
+                        {activeTab !== 'Dossier' && (
+                            <div className="bg-white rounded-[10px] border border-yim-200 p-12 text-center">
+                                <p className="text-yim-400">"{activeTab}" tab — placeholder in dit prototype</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mijn acties sidebar */}
+                    <div className="w-[300px] flex-shrink-0">
+                        <div className="bg-yim-700 pt-[50px] pb-[30px] px-5 sticky top-28 relative overflow-hidden"
+                            style={{ borderRadius: '10px 110px 10px 10px' }}>
+                            <div className="absolute top-0 right-0 w-[117px] h-[111px] opacity-[0.08]">
+                                <svg viewBox="0 0 117 111" fill="none" className="w-full h-full">
+                                    <path d="M117 0H0C0 61.3 52.7 111 117 111V0Z" fill="white"></path>
+                                </svg>
+                            </div>
+                            <h3 className="text-[32px] font-normal text-white leading-[32px] pb-2.5">Mijn acties</h3>
+                            <div className="pt-[30px] space-y-4">
+                                {canEditDossier ? (
+                                    <button onClick={() => onEditDossier && onEditDossier()}
+                                        className="w-full flex items-center gap-[20px] pl-2.5 text-white hover:opacity-80 transition-opacity text-left">
+                                        <span className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </span>
+                                        <span className="text-[16px] font-semibold leading-[20px]">Contractor dossier bewerken</span>
+                                    </button>
+                                ) : (
+                                    <div className="w-full flex items-center gap-[20px] pl-2.5 text-white/40 cursor-not-allowed" title="Deze rol heeft geen bewerkrechten">
+                                        <span className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                        </span>
+                                        <span className="text-[15px] font-semibold leading-[18px] italic">Bewerken niet toegestaan<br/><span className="text-[11px] font-normal opacity-70">Rol mist edit-recht</span></span>
+                                    </div>
+                                )}
+                                <button className="w-full flex items-center gap-[20px] pl-2.5 text-white hover:opacity-80 transition-opacity text-left">
+                                    <span className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </span>
+                                    <span className="text-[16px] font-semibold leading-[20px]">Nieuw bezoek toevoegen</span>
+                                </button>
+                                <button className="w-full flex items-center gap-[20px] pl-2.5 text-white hover:opacity-80 transition-opacity text-left">
+                                    <span className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    </span>
+                                    <span className="text-[16px] font-semibold leading-[20px]">Foto upload</span>
+                                </button>
+                                <button className="w-full flex items-center gap-[20px] pl-2.5 text-white hover:opacity-80 transition-opacity text-left">
+                                    <span className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    </span>
+                                    <span className="text-[16px] font-semibold leading-[20px]">Synchroniseer persoon</span>
+                                </button>
+                            </div>
+                            <div className="pt-[60px] flex items-center gap-[15px] pl-[17px]">
+                                <span className="flex-shrink-0 text-white">
+                                    <svg className="w-[20px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                </span>
+                                <span className="text-[14px] font-semibold text-white leading-[18px]">yimsupport@nsecure.nl</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ YIM-STYLE DOSSIER EDIT VIEW (full-screen overlay) ============
+        // YIM-stepper layout. Verborgen velden = locked. Gemaskeerde velden = oog-reveal + audit log.
+        function YIMDossierEdit({ role, profile, concept, canReveal, revealedFields, setRevealedFields, setAuditLog, onClose }) {
+            const [activeStep, setActiveStep] = useState(1);
+            const [activeSubSection, setActiveSubSection] = useState(null);
+
+            // Same visibility-engine als YIMDossierView
+            const isFieldVisible = (fieldId) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return false;
+                const effectiveCats = concept === 'A' ? profile?.allowedCategories : role.allowedCategories;
+                if (!effectiveCats?.[def.categoryId]) return false;
+                if (concept === 'G' && role._fieldOverrides && role._fieldOverrides[def.categoryId]) {
+                    if (role._fieldOverrides[def.categoryId][fieldId] === false) return false;
+                }
+                return true;
+            };
+            const isFieldSensitive = (fieldId) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return false;
+                return def.sensitivity === 'zeer_gevoelig' || def.categorySensitivity === 'zeer_gevoelig';
+            };
+
+            const handleReveal = (fieldId) => {
+                setRevealedFields(prev => ({ ...prev, [fieldId]: true }));
+                setAuditLog(prev => [...prev, {
+                    timestamp: new Date().toISOString(),
+                    role: role.name,
+                    field: FIELD_DEFS[fieldId]?.name || fieldId,
+                    action: 'reveal-edit'  // Onderscheid: reveal tijdens edit
+                }]);
+                setTimeout(() => {
+                    setRevealedFields(prev => { const n = { ...prev }; delete n[fieldId]; return n; });
+                }, 5000);
+            };
+
+            // Step structure (mirroring YIM screenshots)
+            const STEPS = [
+                {
+                    number: 1, title: 'Inhuur- of Contractperiode',
+                    description: 'De periode van de persoon die ingehuurd wordt of een contract heeft.',
+                    sections: [
+                        { title: 'Inhuur- of Contractperiode', fields: ['period_from', 'period_to'] }
+                    ]
+                },
+                {
+                    number: 2, title: 'Basis registratie',
+                    description: 'Persoonsgegevens, werkgever en contactpersoon.',
+                    sections: [
+                        { title: 'Personalia', fields: ['first_name', 'initials', 'last_name_prefix', 'last_name', 'language', 'email', 'phone'] },
+                        { title: 'Gegevens werkgever', fields: ['main_contractor', 'main_contractor_kvk', 'employer', 'employer_kvk', 'job_functions'] },
+                        { title: 'Contactpersoon (werkgever)', fields: ['contact_person_name', 'contact_person_email', 'contact_person_phone'] },
+                        { title: 'Verblijfplaats', fields: ['locality', 'country_of_residence'] }
+                    ]
+                },
+                {
+                    number: 3, title: 'Aanvullende gegevens',
+                    description: 'Identificatie, kwalificaties en certificaten.',
+                    sections: [
+                        { title: 'Identificatie', fields: ['nationality', 'date_of_birth', 'id_type', 'id_document_number', 'id_expiration_date', 'bsn', 'vog'] },
+                        { title: 'Specificatie gewerkte uren', fields: ['half_time_work_for_client', 'part_of_purchase_agreement', 'limosa_notification', 'posted_workers_registered', 'socially_insured_nl', 'a1_document', 'a1_document_validity'] },
+                        { title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
+                        { title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] }
+                    ]
+                }
+            ];
+
+            const currentStepData = STEPS.find(s => s.number === activeStep);
+
+            // Input row component: locked, masked, or normal
+            const InputRow = ({ fieldId }) => {
+                const def = FIELD_DEFS[fieldId];
+                if (!def) return null;
+                const visible = isFieldVisible(fieldId);
+                const sensitive = isFieldSensitive(fieldId);
+                const isRevealed = revealedFields[fieldId];
+                const value = personFields[fieldId] || '';
+
+                if (!visible) {
+                    // Verborgen veld: vergrendeld + lock-icoon + niet bewerkbaar
+                    return (
+                        <div className="grid items-center gap-4 py-3 px-4 bg-yim-50 border-b border-yim-100 last:border-0" style={{ gridTemplateColumns: '240px 1fr' }}>
+                            <label className="text-sm text-yim-500 flex items-center gap-2">
+                                <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                {def.name}
+                            </label>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-yim-400 italic">Niet bewerkbaar — geen inzage</span>
+                                <span className="text-[10px] font-semibold text-yim-400 bg-yim-100 px-2 py-0.5 rounded uppercase tracking-wider">Vergrendeld</span>
+                            </div>
+                        </div>
+                    );
+                }
+
+                const showValue = !sensitive || isRevealed;
+                const displayValue = showValue ? value : '••••••••';
+
+                return (
+                    <div className="grid items-center gap-4 py-3 px-4 border-b border-yim-100 last:border-0 group hover:bg-yim-50/40" style={{ gridTemplateColumns: '240px 1fr' }}>
+                        <label className="text-sm font-medium text-yim-700 flex items-center gap-2">
+                            {def.name}
+                            {sensitive && !isRevealed && (
+                                <svg className="w-3.5 h-3.5 text-yim-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            )}
+                            {isRevealed && (
+                                <span className="flex items-center gap-1 text-[10px] text-yim-green font-semibold uppercase tracking-wider">5s</span>
+                            )}
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <input type="text" value={displayValue} readOnly={!showValue}
+                                className={`flex-1 px-3 py-2 border rounded text-sm focus:ring-2 focus:ring-yim-500 focus:border-yim-500 ${
+                                    showValue ? 'border-yim-300 bg-white text-yim-700' : 'border-yim-200 bg-yim-50 text-yim-300 italic'
+                                }`}
+                                onChange={() => {}}
+                            />
+                            {sensitive && !isRevealed && canReveal && (
+                                <button onClick={() => handleReveal(fieldId)}
+                                    className="px-3 py-2 text-xs font-medium text-yim-600 hover:text-yim-700 bg-yim-50 hover:bg-yim-100 border border-yim-200 rounded transition-colors flex items-center gap-1">
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    Toon (5s)
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col">
+                    {/* Header */}
+                    <div className="bg-white border-b border-yim-200 px-6 py-4 flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-4">
+                            <button onClick={onClose} className="p-2 text-yim-300 hover:text-yim-600 hover:bg-yim-100 rounded-lg transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                            <div>
+                                <h2 className="text-lg font-semibold text-yim-700">Contractor dossier bewerken</h2>
+                                <p className="text-sm text-yim-500">Jan de Vries · ABC Bouw B.V. · Rol: {role.name}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-yim-500 italic">Wijzigingen in deze prototype-view zijn niet persistent</span>
+                        </div>
+                    </div>
+
+                    {/* Body: stepper sidebar + content */}
+                    <div className="flex flex-1 overflow-hidden">
+                        {/* Stepper sidebar */}
+                        <div className="w-[280px] flex-shrink-0 bg-yim-700 text-white overflow-y-auto" style={{ borderRadius: '0 0 110px 0' }}>
+                            <div className="px-6 pt-12 pb-8">
+                                <h3 className="text-2xl font-bold mb-8 pr-8">Contractor dossier bewerken</h3>
+                                <ul className="space-y-1">
+                                    {STEPS.map(step => {
+                                        const isActive = step.number === activeStep;
+                                        const isComplete = step.number < activeStep;
+                                        return (
+                                            <li key={step.number}>
+                                                <button onClick={() => { setActiveStep(step.number); setActiveSubSection(null); }}
+                                                    className={`w-full text-left px-4 py-3 rounded transition-colors flex items-center gap-3 ${
+                                                        isActive ? 'bg-white/10' : 'hover:bg-white/5'
+                                                    }`}>
+                                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                                                        isComplete ? 'bg-yim-green text-white' : isActive ? 'bg-white text-yim-700' : 'bg-white/20 text-white'
+                                                    }`}>
+                                                        {isComplete ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : step.number}
+                                                    </span>
+                                                    <span className={`text-sm ${isActive ? 'font-bold' : ''}`}>{step.title}</span>
+                                                </button>
+                                                {isActive && step.sections.length > 1 && (
+                                                    <ul className="ml-10 mt-1 space-y-0.5 mb-2">
+                                                        {step.sections.map((s, idx) => (
+                                                            <li key={idx}>
+                                                                <button onClick={() => setActiveSubSection(idx)}
+                                                                    className={`text-xs py-1.5 px-2 rounded w-full text-left transition-colors ${
+                                                                        activeSubSection === idx ? 'text-yellow-300 font-bold bg-white/10' : 'text-white/70 hover:text-white'
+                                                                    }`}>
+                                                                    {s.title}
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Main form area */}
+                        <div className="flex-1 overflow-y-auto bg-yim-50/30 p-8">
+                            <div className="max-w-4xl mx-auto">
+                                {/* Step intro */}
+                                <div className="flex items-start gap-4 mb-6">
+                                    <span className="w-8 h-8 rounded-full bg-yim-100 text-yim-700 flex items-center justify-center font-bold text-sm">
+                                        {currentStepData.number}
+                                    </span>
+                                    <div>
+                                        <h1 className="text-3xl font-bold text-yim-700">{currentStepData.title}</h1>
+                                        <p className="text-sm text-yim-500 mt-1">{currentStepData.description}</p>
+                                    </div>
+                                </div>
+
+                                {/* Sections */}
+                                <div className="space-y-6">
+                                    {currentStepData.sections.map((section, idx) => {
+                                        const visibleCount = section.fields.filter(f => isFieldVisible(f)).length;
+                                        const hiddenCount = section.fields.length - visibleCount;
+                                        return (
+                                            <div key={idx} className="bg-white rounded-lg border border-yim-200 overflow-hidden">
+                                                <div className="px-5 py-3 border-b border-yim-100 flex items-center justify-between bg-yim-50/50">
+                                                    <h3 className="text-lg font-bold text-yim-700">{section.title}</h3>
+                                                    {hiddenCount > 0 && (
+                                                        <span className="text-xs font-medium text-yim-500 bg-yim-100 px-2 py-0.5 rounded flex items-center gap-1.5">
+                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                            {hiddenCount} verborgen
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    {section.fields.map(f => <InputRow key={f} fieldId={f} />)}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="bg-white border-t border-yim-200 px-6 py-4 flex items-center justify-between shrink-0">
+                        <button onClick={onClose} className="px-4 py-2 text-sm text-yim-600 hover:bg-yim-100 rounded-lg">
+                            ← Terug naar overzicht
+                        </button>
+                        <div className="flex items-center gap-2">
+                            {activeStep > 1 && (
+                                <button onClick={() => { setActiveStep(activeStep - 1); setActiveSubSection(null); }} className="px-4 py-2 text-sm text-yim-600 hover:bg-yim-100 rounded-lg">
+                                    Vorige
+                                </button>
+                            )}
+                            {activeStep < STEPS.length && (
+                                <button onClick={() => { setActiveStep(activeStep + 1); setActiveSubSection(null); }} className="px-5 py-2 bg-yim-500 text-white text-sm font-medium rounded-lg hover:bg-yim-600">
+                                    Volgende
+                                </button>
+                            )}
+                            {activeStep === STEPS.length && (
+                                <button onClick={onClose} className="px-5 py-2 bg-yim-green text-white text-sm font-medium rounded-lg hover:bg-yim-green/80">
+                                    Indienen (demo)
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         function App({ roles, setRoles, visibilityProfiles, setVisibilityProfiles, currentTab, setCurrentTab, concept, setConcept }) {
             const [currentRole, setCurrentRole] = useState('admin');
             const [showHelp, setShowHelp] = useState(true);
@@ -479,9 +1104,10 @@
             const CONCEPT_INFO = {
                 A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen' },
                 C: { number: 2, title: 'Inzageniveau', color: 'bg-blue-500', how: 'Admin kiest een gevoeligheidsniveau (1-4) per rol. Systeem suggereert op basis van taken.', what: 'Niveau 1 = alleen naam, niveau 4 = alles inclusief BSN/VOG.', key: 'Eenvoudige slider, systeem denkt mee' },
-                G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn.', what: 'Categorieën worden afgeleid, niet handmatig gekozen. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid' },
+                G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn. Per categorie veld-niveau drill-down beschikbaar (behalve Overheids-ID = all-or-nothing).', what: 'Categorieën worden afgeleid. Risico-balk toont gevoeligheidsniveau van actieve selectie. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid + veld-controle' },
             };
             const [revealedFields, setRevealedFields] = useState({});
+            const [editMode, setEditMode] = useState(false);
 
             // Match role config to preset name for viewer badges
             const matchPresetForViewer = (r) => INITIAL_PRESETS.find(p =>
@@ -497,6 +1123,11 @@
             // Resolve visibility based on active concept
             const profile = concept === 'A' ? visibilityProfiles.find(p => p.id === role.visibilityProfileId) : null;
             const canReveal = concept === 'A' ? (profile?.canReveal || false) : (role.canReveal || false);
+            // Bewerkrecht: Concept G leidt af uit de taak 'dossier_bewerken' (single source of truth).
+            // Concept A leest 'm nog van het profiel (geen taken in dat model).
+            const canEditDossier = concept === 'A'
+                ? (profile?.canEditDossier || false)
+                : (role.roleSettings?.taken || []).includes('dossier_bewerken');
 
             // Log field reveal
             const logFieldReveal = (category, field, value) => {
@@ -895,118 +1526,32 @@
                             </div>
                         )}
 
-                        {/* Person Header */}
-                        <div className="bg-white rounded-xl border border-yim-200 p-6 mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yim-500 to-yim-600 flex items-center justify-center text-white text-2xl font-semibold">
-                                    {(concept === 'A' ? profile?.allowedCategories?.identity : role.allowedCategories?.identity) ? 'JV' : '••'}
-                                </div>
-                                <div className="flex-1">
-                                    <h2 className="text-2xl font-semibold text-yim-600 mb-1">
-                                        {(concept === 'A' ? profile?.allowedCategories?.identity : role.allowedCategories?.identity) ? 'Jan de Vries' : '••••••••'}
-                                    </h2>
-                                    <div className="flex items-center gap-4 text-sm text-yim-600 opacity-70">
-                                        <span>{(concept === 'A' ? profile?.allowedCategories?.employment : role.allowedCategories?.employment) ? 'ABC Bouw B.V.' : '••••••••'}</span>
-                                        <span className="text-yim-300">•</span>
-                                        <span>{(concept === 'A' ? profile?.allowedCategories?.employment : role.allowedCategories?.employment) ? 'Projectleider' : '••••••••'}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-yim-green/100"></div>
-                                    <span className="text-sm font-medium text-yim-600">Actief</span>
-                                </div>
-                            </div>
-                        </div>
+                        {/* ===== YIM-style dossier (Overzicht tab) ===== */}
+                        <YIMDossierView
+                            role={role}
+                            profile={profile}
+                            concept={concept}
+                            canReveal={canReveal}
+                            canEditDossier={canEditDossier}
+                            revealedFields={revealedFields}
+                            setRevealedFields={setRevealedFields}
+                            setAuditLog={setAuditLog}
+                            onEditDossier={() => canEditDossier && setEditMode(true)}
+                        />
 
-                        {/* Data Sections */}
-                        <div className="space-y-6">
-                            <DataSection
-                                title="Persoonsgegevens"
-                                groups={['identity', 'contact_work', 'address', 'government_id']}
-                                icon={
-                                    <svg className="w-5 h-5 text-yim-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                }
-                            >
-                                <DataField label="Voornaam" value={personData.personal.firstName} groupId="identity" fieldId="firstName" />
-                                <DataField label="Achternaam" value={personData.personal.lastName} groupId="identity" fieldId="lastName" />
-                                <DataField label="E-mail" value={personData.personal.email} groupId="contact_work" sensitive fieldId="email" />
-                                <DataField label="Telefoon" value={personData.personal.phone} groupId="contact_work" sensitive fieldId="phone" />
-                                <DataField label="Geboortedatum" value={personData.personal.dateOfBirth} groupId="government_id" sensitive fieldId="dob" />
-                                <DataField label="BSN" value={personData.personal.bsn} groupId="government_id" sensitive fieldId="bsn" />
-                                <DataField label="Nationaliteit" value={personData.personal.nationality} groupId="identity" fieldId="nationality" />
-                                <DataField label="Adres" value={personData.personal.address} groupId="address" sensitive fieldId="address" />
-                            </DataSection>
-
-                            <DataSection
-                                title="Arbeidsgegevens"
-                                groups={['employment']}
-                                icon={
-                                    <svg className="w-5 h-5 text-yim-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                }
-                            >
-                                <DataField label="Bedrijf" value={personData.employment.company} groupId="employment" fieldId="company" />
-                                <DataField label="KVK Nummer" value={personData.employment.kvkNumber} groupId="employment" fieldId="kvk" />
-                                <DataField label="Medewerker Nr." value={personData.employment.employeeNumber} groupId="employment" fieldId="empNo" />
-                                <DataField label="Functie" value={personData.employment.function} groupId="employment" fieldId="function" />
-                                <DataField label="Afdeling" value={personData.employment.department} groupId="employment" fieldId="dept" />
-                                <DataField label="Contract Type" value={personData.employment.contractType} groupId="employment" fieldId="contract" />
-                                <DataField label="Startdatum" value={personData.employment.startDate} groupId="employment" fieldId="start" />
-                            </DataSection>
-
-                            <DataSection
-                                title="Compliance & Certificaten"
-                                groups={['compliance']}
-                                icon={
-                                    <svg className="w-5 h-5 text-yim-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                                    </svg>
-                                }
-                            >
-                                <DataField label="VCA Status" value={personData.compliance.vca.status} groupId="compliance" fieldId="vcaStat" />
-                                <DataField label="VCA Geldig tot" value={personData.compliance.vca.expiryDate} groupId="compliance" fieldId="vcaExp" />
-                                <DataField label="VCA Nummer" value={personData.compliance.vca.number} groupId="compliance" fieldId="vcaNum" />
-                                <DataField label="VOG Status" value={personData.compliance.vog.status} groupId="compliance" fieldId="vogStat" />
-                                <DataField label="VOG Geldig tot" value={personData.compliance.vog.expiryDate} groupId="compliance" fieldId="vogExp" />
-                                <DataField label="Safety Training" value={personData.compliance.safety.status} groupId="compliance" fieldId="safety" />
-                                <DataField label="COVID Certificaat" value={personData.compliance.covid.status} groupId="compliance" fieldId="covid" />
-                            </DataSection>
-
-                            <DataSection
-                                title="Toegangsrechten"
-                                groups={['access']}
-                                icon={
-                                    <svg className="w-5 h-5 text-yim-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                    </svg>
-                                }
-                            >
-                                <DataField label="Locaties" value={personData.access.sites.join(', ')} groupId="access" fieldId="sites" />
-                                <DataField label="Zones" value={personData.access.zones.join(', ')} groupId="access" fieldId="zones" />
-                                <DataField label="Pas Nummer" value={personData.access.cardNumber} groupId="access" sensitive fieldId="card" />
-                                <DataField label="Geldig tot" value={personData.access.validUntil} groupId="access" fieldId="valid" />
-                                <DataField label="Laatste toegang" value={personData.access.lastAccess} groupId="access" fieldId="last" />
-                            </DataSection>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="mt-8 p-6 bg-yim-100 rounded-xl border border-yim-200">
-                            <div className="flex items-start gap-3">
-                                <svg className="w-5 h-5 text-yim-600 opacity-60 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div>
-                                    <h4 className="text-sm font-semibold text-yim-600 mb-1">Privacy & Audit Trail</h4>
-                                    <p className="text-sm text-yim-600 opacity-70 leading-relaxed">
-                                        Gevoelige velden zijn standaard gemaskeerd. Geautoriseerde rollen kunnen data tijdelijk onthullen (5 seconden).
-                                        Alle ontsleutelingen worden gelogd in de audit trail voor compliance en security audits.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                        {/* ===== Edit-view (overlay) — alleen openen als rol bewerkrecht heeft ===== */}
+                        {editMode && canEditDossier && (
+                            <YIMDossierEdit
+                                role={role}
+                                profile={profile}
+                                concept={concept}
+                                canReveal={canReveal}
+                                revealedFields={revealedFields}
+                                setRevealedFields={setRevealedFields}
+                                setAuditLog={setAuditLog}
+                                onClose={() => setEditMode(false)}
+                            />
+                        )}
                         </>
                         )}
 
@@ -1018,51 +1563,49 @@
             );
         }
 
-        // Data Groups Configuration
-        // ============ CATEGORY HIERARCHY (Concept C V3/V4) ============
-        // Hoofdcategorie (UI) → Categorie (autorisatie) → Velden
+        // ============ CATEGORY HIERARCHY (Concept 2 V3/V4) ============
+        // Hoofdcategorie (UI) → Categorie (autorisatie) → Velden. Aligned met YIM-codebase.
         const CATEGORY_HIERARCHY = [
             {
                 id: 'persoonsgegevens', label: 'Persoonsgegevens',
                 subcategories: [
-                    { id: 'identity', name: 'Identiteit (basis)', fields: ['Voornaam', 'Achternaam', 'Geboortedatum'] },
-                    { id: 'foto', name: 'Foto', fields: ['Pasfoto', 'ID-foto'] },
-                    { id: 'nationality', name: 'Nationaliteit', fields: ['Nationaliteit', 'Vestigingsland'] },
-                    { id: 'contact_work', name: 'Contact (werk)', fields: ['Zakelijk e-mail', 'Zakelijk telefoon'] },
-                    { id: 'address', name: 'Adres / woonplaats', fields: ['Woonplaats', 'Postcode', 'Straat + huisnummer'] },
-                    { id: 'government_id', name: 'Identificatie (BSN / documentnummer)', fields: ['BSN', 'Documentnummer', 'Documenttype', 'Verloopdatum'] }
+                    { id: 'identity', name: 'Identiteit (basis)', fields: ['Voornaam', 'Initialen', 'Tussenvoegsel', 'Achternaam', 'Geboortedatum'] },
+                    { id: 'foto', name: 'Foto', fields: ['Pasfoto'] },
+                    { id: 'nationality', name: 'Nationaliteit', fields: ['Nationaliteit'] },
+                    { id: 'contact_work', name: 'Contact', fields: ['E-mailadres', 'Telefoonnummer', 'Taal'] },
+                    { id: 'address', name: 'Verblijfplaats', fields: ['Plaats', 'Land van vestiging'] }
                 ]
             },
             {
-                id: 'dossier', label: 'Dossier',
+                id: 'identificatie', label: 'Identificatie (zeer gevoelig)',
                 subcategories: [
-                    { id: 'employment', name: 'Arbeidsgegevens', fields: ['Bedrijf', 'Functie', 'Contract type', 'Startdatum'] },
-                    { id: 'posted_worker', name: 'Posted Worker (WagwEU)', fields: ['A1-verklaring', 'Werkvergunning', 'Detacheringsovereenkomst'] },
-                    { id: 'sociale_lasten', name: 'Sociale lasten', fields: ['Verzekeringsland', 'A1-status', 'Premieplicht'] },
-                    { id: 'compliance', name: 'Compliance (status)', fields: ['VCA status', 'VCA verloopdatum', 'VOG status'] },
-                    { id: 'hours', name: 'Uren / inzet', fields: ['Gewerkte uren', 'Project toewijzing'] },
-                    { id: 'gewerkte_uren', name: 'Gewerkte uren', fields: ['Uren per dag', 'Totaal uren'] }
+                    { id: 'government_id', name: 'Overheids-ID (all-or-nothing)', fields: ['Type ID Bewijs', 'Documentnummer identiteitsbewijs', 'Geldigheidsdatum', 'BSN / EU persoonsnummer', 'VOG'] }
                 ]
             },
             {
-                id: 'certificaten', label: 'Certificaten',
+                id: 'arbeid', label: 'Arbeid',
                 subcategories: [
-                    { id: 'vca', name: 'VCA-certificaat', fields: ['VCA-basis', 'VCA-VOL', 'Verloopdatum'] },
-                    { id: 'vog', name: 'VOG', fields: ['VOG status', 'Afgiftedatum'] },
-                    { id: 'bhv', name: 'BHV-certificaat', fields: ['BHV status', 'Verloopdatum'] },
-                    { id: 'werkvergunning', name: 'Werkvergunning', fields: ['Vergunningtype', 'Verloopdatum'] },
-                    { id: 'rijbewijs', name: 'Rijbewijs', fields: ['Categorie', 'Verloopdatum'] },
-                    { id: 'vca_certificaten', name: 'VCA certificaten', fields: ['VCA-basis', 'VCA-VOL', 'Certificaatnummer'] }
+                    { id: 'employment', name: 'Arbeidsrelatie', fields: ['Hoofdaannemer', 'Werkgever', 'KVK-nummers', 'Functies', 'Inhuur-/Contractperiode', 'Werkgever-contactpersoon'] },
+                    { id: 'posted_worker', name: 'Sociale lasten', fields: ['Werkzaamheden 50%+', 'Koopovereenkomst', 'Limosa aangifte', 'Posted Workers meldloket', 'Sociaal verzekerd NL', 'A1/E101 document'] }
+                ]
+            },
+            {
+                id: 'kwalificaties', label: 'Kwalificaties',
+                subcategories: [
+                    { id: 'compliance', name: 'Compliance & Instructies', fields: ['VCA-vrijstelling', 'Bedrijfsspecifieke regels', 'Deltalinqs poortinstructies', 'H2S instructies'] },
+                    { id: 'vca', name: 'Certificaten', fields: ['VCA-certificaat', 'BHV-certificaat', 'Werkvergunning', 'Rijbewijs'] }
                 ]
             },
             {
                 id: 'bestanden', label: 'Bestanden',
                 subcategories: [
-                    { id: 'arbeidsovereenkomst', name: 'Arbeidsovereenkomst', fields: ['Contract', 'Voorwaarden'] },
-                    { id: 'loonstroken', name: 'Loonstroken', fields: ['Salarisspecificatie'] },
-                    { id: 'id_kopie', name: 'ID-document', fields: ['Kopie paspoort', 'Kopie ID-kaart'] },
-                    { id: 'a1_verklaring', name: 'A1-verklaring', fields: ['A1-formulier', 'Geldigheid'] },
-                    { id: 'verzekeringsbewijs', name: 'Verzekeringsbewijs', fields: ['Polis', 'Dekkingsbewijs'] }
+                    { id: 'arbeidsovereenkomst', name: 'Bestanden', fields: ['Arbeidsovereenkomst', 'Loonstroken*', 'ID-kopie*', 'A1-verklaring', 'Verzekeringsbewijs'] }
+                ]
+            },
+            {
+                id: 'toegang', label: 'Toegang & Voertuig',
+                subcategories: [
+                    { id: 'access', name: 'Toegang & Voertuig', fields: ['Kenteken', 'Landcode', 'Toegewezen autorisaties'] }
                 ]
             }
         ];
@@ -1076,28 +1619,39 @@
                 id: 'persoonsgegevens', label: 'Persoonsgegevens',
                 groups: [
                     { id: 'grp_identity', name: 'Identiteit', subcatIds: ['identity', 'foto', 'nationality'] },
-                    { id: 'grp_contact', name: 'Contact', subcatIds: ['contact_work', 'address'] },
+                    { id: 'grp_contact', name: 'Contact', subcatIds: ['contact_work', 'address'] }
+                ]
+            },
+            {
+                id: 'identificatie', label: 'Identificatie',
+                groups: [
                     { id: 'grp_government_id', name: 'Overheids-ID', subcatIds: ['government_id'] }
                 ]
             },
             {
-                id: 'dossier', label: 'Dossier',
+                id: 'arbeid', label: 'Arbeid',
                 groups: [
-                    { id: 'grp_employment', name: 'Arbeidsgegevens', subcatIds: ['employment', 'posted_worker', 'sociale_lasten'] },
-                    { id: 'grp_compliance', name: 'Compliance', subcatIds: ['compliance'] },
-                    { id: 'grp_time_tracking', name: 'Uren', subcatIds: ['hours', 'gewerkte_uren'] }
+                    { id: 'grp_employment', name: 'Arbeidsrelatie', subcatIds: ['employment'] },
+                    { id: 'grp_social_charges', name: 'Sociale lasten', subcatIds: ['posted_worker'] }
                 ]
             },
             {
-                id: 'certificaten', label: 'Certificaten',
+                id: 'kwalificaties', label: 'Kwalificaties',
                 groups: [
-                    { id: 'grp_certificates', name: 'Certificaten', subcatIds: ['vca', 'vog', 'bhv', 'werkvergunning', 'rijbewijs', 'vca_certificaten'] }
+                    { id: 'grp_compliance', name: 'Compliance & Instructies', subcatIds: ['compliance'] },
+                    { id: 'grp_certificates', name: 'Certificaten', subcatIds: ['vca'] }
                 ]
             },
             {
                 id: 'bestanden', label: 'Bestanden',
                 groups: [
-                    { id: 'grp_documents', name: 'Documenten', subcatIds: ['arbeidsovereenkomst', 'loonstroken', 'id_kopie', 'a1_verklaring', 'verzekeringsbewijs'] }
+                    { id: 'grp_documents', name: 'Documenten', subcatIds: ['arbeidsovereenkomst'] }
+                ]
+            },
+            {
+                id: 'toegang', label: 'Toegang',
+                groups: [
+                    { id: 'grp_access', name: 'Toegang & Voertuig', subcatIds: ['access'] }
                 ]
             }
         ];
@@ -1166,9 +1720,21 @@
                 certCategories: compute(certificateCategories, 'certCategories'),
                 fileCategories: compute(fileCategories, 'fileCategories')
             };
-            // Also include hierarchy subcategories not in legacy arrays
+            // Also include hierarchy subcategories not in legacy arrays.
+            // Map nieuwe hierarchy IDs naar legacy buckets voor backwards compat.
+            const hierarchyBucketMap = {
+                'persoonsgegevens': 'categories',
+                'identificatie': 'categories',      // Overheids-ID hoort onder persoonsgegevens-bucket
+                'arbeid': 'dossierCategories',       // Werkgever + sociale lasten = dossier
+                'kwalificaties': 'dossierCategories', // Compliance + cert = dossier-bucket
+                'bestanden': 'fileCategories',
+                'toegang': 'dossierCategories',      // Toegang & voertuig fallback
+                // Legacy fallbacks
+                'dossier': 'dossierCategories',
+                'certificaten': 'certCategories'
+            };
             CATEGORY_HIERARCHY.forEach(h => {
-                const bucket = h.id === 'persoonsgegevens' ? 'categories' : h.id === 'dossier' ? 'dossierCategories' : h.id === 'certificaten' ? 'certCategories' : 'fileCategories';
+                const bucket = hierarchyBucketMap[h.id] || 'categories';
                 h.subcategories.forEach(s => {
                     if (result[bucket][s.id] === undefined) {
                         const base = CATEGORY_MIN_LEVEL[s.id] <= level;
@@ -1297,22 +1863,22 @@
         };
 
         // Concept G: Task-driven derivation — categories computed from roleSettings
-        const createGRole = (name, desc, settingsFactory, canReveal) => {
+        const createGRole = (name, desc, settingsFactory, canReveal, canEditDossier) => {
             const rs = settingsFactory();
             const { allowedCategories, _justifications9 } = deriveTo9Categories(rs);
             return {
-                name, description: desc, canReveal, roleSettings: rs,
+                name, description: desc, canReveal, canEditDossier, roleSettings: rs,
                 allowedCategories,
                 _derivedCategories: { ...allowedCategories },
                 _justifications9, _overrides: {}
             };
         };
         const initialRolesG = {
-            admin: createGRole('Administrator', 'Volledige toegang', createAdminRoleSettings, true),
-            hr: createGRole('HR Manager', 'Persoons- en arbeidsgegevens', createHRRoleSettings, true),
-            security: createGRole('Security Manager', 'Compliance en toegang', createSecurityRoleSettings, false),
-            contractor: createGRole('Contractor', 'Beperkte toegang', createMinimalRoleSettings, false),
-            guest: createGRole('Guest', 'Basis verificatie', createDefaultRoleSettings, false),
+            admin: createGRole('Administrator', 'Volledige toegang', createAdminRoleSettings, true, true),
+            hr: createGRole('HR Manager', 'Persoons- en arbeidsgegevens', createHRRoleSettings, true, true),
+            security: createGRole('Security Manager', 'Compliance en toegang', createSecurityRoleSettings, false, false),
+            contractor: createGRole('Contractor', 'Beperkte toegang', createMinimalRoleSettings, false, false),
+            guest: createGRole('Guest', 'Basis verificatie', createDefaultRoleSettings, false, false),
         };
 
         // ============ Concept C: Suggest sensitivity level from derivation ============
@@ -1331,18 +1897,18 @@
 
         // ============ Concept C roles (sensitivity level based + derived justifications) ============
         const initialRolesC = (() => {
-            const makeRole = (name, desc, level, settingsFactory, canReveal) => {
+            const makeRole = (name, desc, level, settingsFactory, canReveal, canEditDossier) => {
                 const rs = settingsFactory();
                 const { _justifications } = suggestSensitivityLevel(rs);
-                return { name, description: desc, sensitivityLevel: level, exceptions: {}, canReveal, roleSettings: rs,
+                return { name, description: desc, sensitivityLevel: level, exceptions: {}, canReveal, canEditDossier, roleSettings: rs,
                   ...getCategoriesForLevel(level), _justifications };
             };
             return {
-                admin: makeRole("Administrator", "Volledige toegang", 4, createAdminRoleSettings, true),
-                hr: makeRole("HR Manager", "Persoons- en arbeidsgegevens", 3, createHRRoleSettings, true),
-                security: makeRole("Security Manager", "Compliance en toegang", 2, createSecurityRoleSettings, false),
-                contractor: makeRole("Contractor", "Beperkte toegang", 2, createSecurityRoleSettings, false),
-                guest: makeRole("Guest", "Basis verificatie", 1, createMinimalRoleSettings, false)
+                admin: makeRole("Administrator", "Volledige toegang", 4, createAdminRoleSettings, true, true),
+                hr: makeRole("HR Manager", "Persoons- en arbeidsgegevens", 3, createHRRoleSettings, true, true),
+                security: makeRole("Security Manager", "Compliance en toegang", 2, createSecurityRoleSettings, false, false),
+                contractor: makeRole("Contractor", "Beperkte toegang", 2, createSecurityRoleSettings, false, false),
+                guest: makeRole("Guest", "Basis verificatie", 1, createMinimalRoleSettings, false, false)
             };
         })();
 
@@ -1646,6 +2212,7 @@
             const [showAllRoles, setShowAllRoles] = useState(false);
             const [saveConfirm, setSaveConfirm] = useState(false);
             const [openMenuKey, setOpenMenuKey] = useState(null);
+            const [expandedCatId, setExpandedCatId] = useState(null);
 
             // Close editors on concept switch to prevent stale state
             React.useEffect(() => {
@@ -1781,6 +2348,7 @@
                 setSelectedRole(null);
                 setEditForm({});
                 setIsNewRole(false);
+                setExpandedCatId(null);
             };
 
             const saveRole = () => {
@@ -1876,6 +2444,7 @@
                 setIsNewProfile(false);
                 setShowAllRoles(false);
                 setSaveConfirm(false);
+                setExpandedCatId(null);
             };
 
             const confirmSaveProfile = () => {
@@ -2021,35 +2590,226 @@
                                     </div>
                                 </div>
 
-                                {/* Category-based visibility controls (same 9 categories as B/E/F) */}
+                                {/* Category-based visibility controls (zelfde drill-down + risicobalk als Concept 3) */}
                                 <div className="bg-white rounded-xl border border-yim-200 overflow-hidden">
-                                    <div className="px-5 py-4 border-b border-yim-200 bg-yim-50">
-                                        <p className="text-xs text-yim-600 opacity-60">Welke categorieën mag dit profiel zien? · {Object.values(profileEditForm.allowedCategories || {}).filter(Boolean).length}/{ALL_CATEGORY_IDS.length} actief</p>
+                                    <div className="px-5 py-4 border-b border-yim-200">
+                                        <h3 className="text-sm font-semibold text-yim-700">Data-inzage</h3>
+                                        <p className="text-xs text-yim-500 opacity-70 mt-0.5">Vink een categorie aan om data zichtbaar te maken. Klap open voor veld-niveau control.</p>
                                     </div>
-                                    <div className="divide-y divide-yim-100">
-                                        {UI_GROUPS.map(ug => {
-                                            const groupCats = CATEGORIES.filter(c => c.uiGroup === ug.id);
-                                            return (
-                                                <div key={ug.id} className="px-5 py-3 flex items-start gap-3">
-                                                    <span className="text-sm font-medium text-yim-600 w-32 flex-shrink-0 pt-1">{ug.label}</span>
-                                                    <div className="flex flex-wrap gap-2 flex-1">
-                                                        {groupCats.map(cat => {
-                                                            const active = !!profileEditForm.allowedCategories?.[cat.id];
-                                                            const isSensitive = cat.sensitivity === 'zeer_gevoelig';
-                                                            return (
-                                                                <button key={cat.id} onClick={() => setProfileEditForm(prev => ({
-                                                                    ...prev, allowedCategories: { ...prev.allowedCategories, [cat.id]: !active }
-                                                                }))} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
-                                                                    active ? isSensitive ? 'bg-red-50 border-red-200 text-red-700' : 'bg-yim-50 border-yim-400 text-yim-600'
-                                                                    : 'bg-white border-yim-200 text-yim-400 hover:border-yim-300'
-                                                                }`}>
-                                                                    {isSensitive && active && <svg className="w-3 h-3 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>}
-                                                                    {cat.name}
-                                                                </button>
-                                                            );
-                                                        })}
+
+                                    {/* Risico-balk (zelfde als Concept 3) */}
+                                    {(() => {
+                                        const finalCats = profileEditForm.allowedCategories || {};
+                                        const sensitivityToLevel = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
+                                        const sensitivityLabels = { 1: 'Geen inzage', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
+                                        const sensitivityColors = { 1: '#9CA3AF', 2: '#10B981', 3: '#F59E0B', 4: '#EF4444' };
+                                        let maxLevel = 1;
+                                        const activeNames = [];
+                                        CATEGORIES.forEach(cat => {
+                                            if (finalCats[cat.id]) {
+                                                activeNames.push(cat.name);
+                                                const lvl = sensitivityToLevel[cat.sensitivity] || 1;
+                                                if (lvl > maxLevel) maxLevel = lvl;
+                                            }
+                                        });
+                                        const markerColor = sensitivityColors[maxLevel];
+                                        const markerLabel = sensitivityLabels[maxLevel];
+                                        const positionPct = ((maxLevel - 1) / 3) * 100;
+                                        return (
+                                            <div className="px-5 py-4 border-b border-yim-100">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div>
+                                                        <h4 className="text-xs font-bold text-yim-600 uppercase tracking-wider">Risico-inzage</h4>
+                                                        <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">Gevoeligheidsniveau van actieve categorieën</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: markerColor }}>{markerLabel}</span>
+                                                        <p className="text-[10px] text-yim-500 opacity-70 mt-0.5">{activeNames.length} categorie(ën) actief</p>
                                                     </div>
                                                 </div>
+                                                <div className="relative">
+                                                    <div className="flex h-3 rounded-full overflow-hidden">
+                                                        <div className="flex-1" style={{ backgroundColor: '#9CA3AF', opacity: maxLevel >= 1 ? 1 : 0.3 }}></div>
+                                                        <div className="flex-1" style={{ backgroundColor: '#10B981', opacity: maxLevel >= 2 ? 1 : 0.3 }}></div>
+                                                        <div className="flex-1" style={{ backgroundColor: '#F59E0B', opacity: maxLevel >= 3 ? 1 : 0.3 }}></div>
+                                                        <div className="flex-1" style={{ backgroundColor: '#EF4444', opacity: maxLevel >= 4 ? 1 : 0.3 }}></div>
+                                                    </div>
+                                                    <div className="absolute -bottom-1.5 transition-all duration-300"
+                                                        style={{ left: `calc(${positionPct}% + (${50 - positionPct}% / 4))`, transform: 'translateX(-50%)' }}>
+                                                        <svg className="w-4 h-4" viewBox="0 0 12 12">
+                                                            {/* Witte achtergrond + donkere border — altijd zichtbaar tegen elke segmentkleur */}
+                                                            <path d="M6 0 L12 10 L0 10 Z" fill="white" stroke="#346474" strokeWidth="1.5" strokeLinejoin="round" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-between mt-3 text-[10px] text-yim-500 opacity-60">
+                                                    <span>Geen</span><span>Basis</span><span>Gevoelig</span><span>Zeer gevoelig</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Drill-down per categorie */}
+                                    <div className="px-5 py-4 space-y-2">
+                                        {CATEGORIES.map(cat => {
+                                            const isActive = !!profileEditForm.allowedCategories?.[cat.id];
+                                            const isAllOrNothing = cat.allOrNothing === true;
+                                            const isExpanded = expandedCatId === `profile-${cat.id}`;
+                                            const canExpand = !isAllOrNothing;
+                                            const fieldOverrides = (profileEditForm._fieldOverrides || {})[cat.id] || {};
+                                            const hiddenFieldCount = Object.values(fieldOverrides).filter(v => v === false).length;
+                                            const totalFields = cat.fields.length;
+                                            const visibleFieldCount = totalFields - hiddenFieldCount;
+
+                                            const toggleCat = () => {
+                                                setProfileEditForm(prev => {
+                                                    const newCats = { ...prev.allowedCategories, [cat.id]: !isActive };
+                                                    // Clear field overrides als categorie uit gaat
+                                                    const fo = { ...(prev._fieldOverrides || {}) };
+                                                    if (isActive) delete fo[cat.id];
+                                                    return { ...prev, allowedCategories: newCats, _fieldOverrides: fo };
+                                                });
+                                            };
+                                            const toggleField = (fieldId) => {
+                                                setProfileEditForm(prev => {
+                                                    const catActive = !!prev.allowedCategories?.[cat.id];
+                                                    // Categorie uit + klik op chip → activeer + alleen dit veld zichtbaar (rest via override op false)
+                                                    if (!catActive) {
+                                                        const newOverrides = {};
+                                                        cat.fields.forEach(f => {
+                                                            if (f.id !== fieldId) newOverrides[f.id] = false;
+                                                        });
+                                                        const fo = { ...(prev._fieldOverrides || {}) };
+                                                        fo[cat.id] = newOverrides;
+                                                        return {
+                                                            ...prev,
+                                                            allowedCategories: { ...prev.allowedCategories, [cat.id]: true },
+                                                            _fieldOverrides: fo
+                                                        };
+                                                    }
+                                                    // Normaal: toggle individuele veld-zichtbaarheid
+                                                    const fo = { ...(prev._fieldOverrides || {}) };
+                                                    const cf = { ...(fo[cat.id] || {}) };
+                                                    if (cf[fieldId] === false) delete cf[fieldId];
+                                                    else cf[fieldId] = false;
+                                                    if (Object.keys(cf).length === 0) delete fo[cat.id];
+                                                    else fo[cat.id] = cf;
+                                                    return { ...prev, _fieldOverrides: fo };
+                                                });
+                                            };
+
+                                            return (
+                                            <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isActive ? 'bg-yim-50 border-yim-500/40' : 'bg-white border-yim-200'}`}>
+                                                <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
+                                                    onClick={() => canExpand && setExpandedCatId(isExpanded ? null : `profile-${cat.id}`)}>
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        {/* Checkbox — apart klikbaar */}
+                                                        <button onClick={(e) => { e.stopPropagation(); toggleCat(); }}
+                                                            className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${isActive ? 'bg-yim-500 border-yim-500' : 'bg-white border-yim-300 hover:border-yim-500'}`}
+                                                            title={isActive ? 'Klik om uit te zetten' : 'Klik om aan te zetten'}>
+                                                            {isActive && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                        </button>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
+                                                                {isAllOrNothing && (
+                                                                    <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control">
+                                                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
+                                                                <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar</p>
+                                                            )}
+                                                            {isActive && hiddenFieldCount > 0 && (
+                                                                <p className="text-[11px] text-amber-600 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar · {hiddenFieldCount} handmatig verborgen</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {canExpand && (
+                                                        <span className="p-1.5 text-yim-400 flex-shrink-0">
+                                                            <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Field-level drill-down — chips naast elkaar */}
+                                                {isExpanded && canExpand && (
+                                                    <div className="border-t border-yim-200/60 bg-white/60 px-4 py-3">
+                                                        <p className="text-[11px] text-yim-500 mb-2">
+                                                            {!isActive
+                                                                ? 'Categorie staat uit. Klik op een veld om de categorie te activeren met alléén dat veld zichtbaar.'
+                                                                : 'Klik op een chip om dat veld individueel te verbergen.'}
+                                                        </p>
+                                                        <div className={`flex flex-wrap gap-1.5 transition-opacity ${!isActive ? 'opacity-50' : ''}`}>
+                                                            {cat.fields.map(field => {
+                                                                const fieldHidden = fieldOverrides[field.id] === false;
+                                                                const fieldSensitivity = field.sensitivity || cat.sensitivity;
+                                                                const dotColor = fieldSensitivity === 'zeer_gevoelig' ? '#EF4444' : fieldSensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
+                                                                const isLocked = field.policyLocked === true;
+                                                                const showCheck = isActive && !fieldHidden && !isLocked;
+                                                                const chipClass = isLocked
+                                                                    ? 'bg-yim-100/60 text-yim-400 border-yim-300 cursor-not-allowed'
+                                                                    : showCheck
+                                                                        ? 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
+                                                                        : 'bg-white text-yim-400 border-yim-200 hover:border-yim-500';
+                                                                const titleText = isLocked
+                                                                    ? (field.policyReason || 'Door policy uitgeschakeld — niet wijzigbaar')
+                                                                    : !isActive
+                                                                        ? `Activeer '${cat.name}' met alleen dit veld zichtbaar`
+                                                                        : fieldHidden ? 'Klik om te tonen' : 'Klik om te verbergen';
+                                                                if (isLocked) {
+                                                                    return (
+                                                                        <span key={field.id} className="relative group inline-flex">
+                                                                            <button disabled
+                                                                                className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                                style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
+                                                                                <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                                                </svg>
+                                                                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor, opacity: 0.4 }}></span>
+                                                                                {field.name}
+                                                                            </button>
+                                                                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-64">
+                                                                                <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
+                                                                                    <span className="flex items-center gap-1.5 font-semibold mb-1">
+                                                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                                                        Company policy
+                                                                                    </span>
+                                                                                    {titleText}
+                                                                                </span>
+                                                                                <span className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-yim-700"></span>
+                                                                            </span>
+                                                                        </span>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <button key={field.id} onClick={() => toggleField(field.id)}
+                                                                        className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                        style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
+                                                                        title={titleText}>
+                                                                        {showCheck && (
+                                                                            <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                                            </svg>
+                                                                        )}
+                                                                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
+                                                                        {field.name}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {isActive && isAllOrNothing && (
+                                                    <div className="border-t border-yim-100 px-4 py-2 bg-yim-50/40">
+                                                        <p className="text-[11px] text-yim-500 italic">Alleen aan/uit op categorie-niveau (zeer gevoelige data).</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                             );
                                         })}
                                     </div>
@@ -2300,27 +3060,71 @@
 
                                 {/* ===== CONCEPT G: Afgeleide data-inzage panel ===== */}
                                 {concept === 'G' && (() => {
-                                    // Bereken altijd LIVE uit huidige roleSettings — niet uit (mogelijk stale) _derivedCategories
+                                    // Live-derive uit huidige roleSettings
                                     const liveDerived = deriveTo9Categories(editForm.roleSettings || createDefaultRoleSettings());
                                     const derivedCats = liveDerived.allowedCategories;
                                     const justifications = liveDerived._justifications9 || {};
                                     const overrides = editForm._overrides || {};
+                                    const fieldOverrides = editForm._fieldOverrides || {};
                                     const overrideCount = Object.keys(overrides).length;
+                                    const fieldOverrideCount = Object.values(fieldOverrides).reduce((sum, o) => sum + Object.keys(o || {}).length, 0);
                                     const derivedCount = Object.values(derivedCats).filter(Boolean).length;
 
                                     const toggleOverride = (catId) => {
                                         setEditForm(prev => {
-                                            const derived = prev._derivedCategories || {};
+                                            const derived = deriveTo9Categories(prev.roleSettings || createDefaultRoleSettings()).allowedCategories;
                                             const ov = { ...(prev._overrides || {}) };
                                             if (ov[catId] !== undefined) {
-                                                delete ov[catId]; // Remove override → revert to derived
+                                                delete ov[catId];
                                             } else {
-                                                ov[catId] = !derived[catId]; // Override: flip from derived
+                                                ov[catId] = !derived[catId];
                                             }
                                             const final = { ...derived };
                                             Object.entries(ov).forEach(([k, v]) => { final[k] = v; });
-                                            return { ...prev, allowedCategories: final, _overrides: ov };
+                                            // Clear field overrides voor categorieën die nu uit zijn
+                                            const fo = { ...(prev._fieldOverrides || {}) };
+                                            Object.keys(fo).forEach(catK => { if (!final[catK]) delete fo[catK]; });
+                                            return { ...prev, allowedCategories: final, _overrides: ov, _fieldOverrides: fo };
                                         });
+                                    };
+
+                                    const toggleField = (catId, fieldId) => {
+                                        setEditForm(prev => {
+                                            const liveD = deriveTo9Categories(prev.roleSettings || createDefaultRoleSettings()).allowedCategories;
+                                            const ov = prev._overrides || {};
+                                            const wasActive = ov[catId] !== undefined ? !!ov[catId] : !!liveD[catId];
+                                            const catDef = CATEGORIES.find(c => c.id === catId);
+
+                                            // Categorie uit + klik op chip → activeer + alleen dit veld zichtbaar (rest via override op false)
+                                            if (!wasActive) {
+                                                const newOv = { ...ov, [catId]: true };
+                                                const finalCats = { ...liveD };
+                                                Object.entries(newOv).forEach(([k, v]) => { finalCats[k] = v; });
+                                                const newOverrides = {};
+                                                (catDef?.fields || []).forEach(f => {
+                                                    if (f.id !== fieldId) newOverrides[f.id] = false;
+                                                });
+                                                const fo = { ...(prev._fieldOverrides || {}) };
+                                                fo[catId] = newOverrides;
+                                                return { ...prev, _overrides: newOv, allowedCategories: finalCats, _fieldOverrides: fo };
+                                            }
+
+                                            // Normaal: toggle individuele veld-zichtbaarheid
+                                            const fo = { ...(prev._fieldOverrides || {}) };
+                                            const catFields = { ...(fo[catId] || {}) };
+                                            if (catFields[fieldId] === false) {
+                                                delete catFields[fieldId];
+                                            } else {
+                                                catFields[fieldId] = false;
+                                            }
+                                            if (Object.keys(catFields).length === 0) delete fo[catId];
+                                            else fo[catId] = catFields;
+                                            return { ...prev, _fieldOverrides: fo };
+                                        });
+                                    };
+
+                                    const toggleExpand = (catId) => {
+                                        setExpandedCatId(prev => prev === catId ? null : catId);
                                     };
 
                                     return (
@@ -2330,49 +3134,213 @@
                                                 <h3 className="text-sm font-semibold text-yim-600">Afgeleide data-inzage</h3>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs text-yim-500 bg-yim-50 px-2 py-0.5 rounded border border-yim-200">{derivedCount} afgeleid</span>
-                                                    {overrideCount > 0 && <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{overrideCount} override</span>}
+                                                    {overrideCount > 0 && <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{overrideCount} categorie-override</span>}
+                                                    {fieldOverrideCount > 0 && <span className="text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">{fieldOverrideCount} veld-override</span>}
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald door rolinstellingen. Klik om handmatig te overriden.</p>
+                                            <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald. Klik op de checkbox om de hele categorie te overriden, of klap open voor veld-niveau controle.</p>
                                         </div>
+
+                                        {/* ===== RISICO-BALK (uitkomst-indicator) ===== */}
+                                        {(() => {
+                                            // Bereken risiconiveau o.b.v. actieve categorieën + hun gevoeligheid
+                                            const finalCats = { ...derivedCats };
+                                            Object.entries(overrides).forEach(([k, v]) => { finalCats[k] = v; });
+                                            const sensitivityToLevel = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
+                                            const sensitivityLabels = { 1: 'Geen inzage', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
+                                            const sensitivityColors = { 1: '#9CA3AF', 2: '#10B981', 3: '#F59E0B', 4: '#EF4444' };
+                                            let maxLevel = 1;
+                                            const activeNames = [];
+                                            CATEGORIES.forEach(cat => {
+                                                if (finalCats[cat.id]) {
+                                                    activeNames.push(cat.name);
+                                                    const lvl = sensitivityToLevel[cat.sensitivity] || 1;
+                                                    if (lvl > maxLevel) maxLevel = lvl;
+                                                }
+                                            });
+                                            const markerColor = sensitivityColors[maxLevel];
+                                            const markerLabel = sensitivityLabels[maxLevel];
+                                            const positionPct = ((maxLevel - 1) / 3) * 100;
+
+                                            return (
+                                                <div className="px-5 py-4 bg-gradient-to-br from-yim-50 to-white border-b border-yim-200">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div>
+                                                            <h4 className="text-xs font-bold text-yim-600 uppercase tracking-wider">Risico-inzage</h4>
+                                                            <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">Gevoeligheidsniveau van actieve categorieën</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: markerColor }}>{markerLabel}</span>
+                                                            <p className="text-[10px] text-yim-500 opacity-70 mt-0.5">{activeNames.length} categorie(ën) actief</p>
+                                                        </div>
+                                                    </div>
+                                                    {/* Gradient balk met segmenten */}
+                                                    <div className="relative">
+                                                        <div className="flex h-3 rounded-full overflow-hidden">
+                                                            <div className="flex-1" style={{ backgroundColor: '#9CA3AF', opacity: maxLevel >= 1 ? 1 : 0.3 }}></div>
+                                                            <div className="flex-1" style={{ backgroundColor: '#10B981', opacity: maxLevel >= 2 ? 1 : 0.3 }}></div>
+                                                            <div className="flex-1" style={{ backgroundColor: '#F59E0B', opacity: maxLevel >= 3 ? 1 : 0.3 }}></div>
+                                                            <div className="flex-1" style={{ backgroundColor: '#EF4444', opacity: maxLevel >= 4 ? 1 : 0.3 }}></div>
+                                                        </div>
+                                                        {/* Marker (pijl) */}
+                                                        <div className="absolute -bottom-1.5 transition-all duration-300"
+                                                            style={{ left: `calc(${positionPct}% + (${50 - positionPct}% / 4))`, transform: 'translateX(-50%)' }}>
+                                                            <svg className="w-4 h-4" viewBox="0 0 12 12">
+                                                                {/* Witte achtergrond + donkere border — altijd zichtbaar tegen elke segmentkleur */}
+                                                                <path d="M6 0 L12 10 L0 10 Z" fill="white" stroke="#346474" strokeWidth="1.5" strokeLinejoin="round" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex justify-between mt-3 text-[10px] text-yim-500 opacity-60">
+                                                        <span>Geen</span>
+                                                        <span>Basis</span>
+                                                        <span>Gevoelig</span>
+                                                        <span>Zeer gevoelig</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
 
                                         <div className="px-5 py-4 space-y-2">
                                             {CATEGORIES.map(cat => {
                                                 const isDerived = !!derivedCats[cat.id];
                                                 const isOverridden = overrides[cat.id] !== undefined;
-                                                // Live computed: derived + overrides applied
                                                 const isActive = isOverridden ? !!overrides[cat.id] : isDerived;
                                                 const reasons = justifications[cat.id] || [];
                                                 const isSensitive = cat.sensitivity === 'zeer_gevoelig';
+                                                const isAllOrNothing = cat.allOrNothing === true;
+                                                const isExpanded = expandedCatId === cat.id;
+                                                const canExpand = !isAllOrNothing;
+                                                const catFieldOverrides = fieldOverrides[cat.id] || {};
+                                                const hiddenFieldCount = Object.values(catFieldOverrides).filter(v => v === false).length;
+                                                const totalFields = cat.fields.length;
+                                                const visibleFieldCount = totalFields - hiddenFieldCount;
 
                                                 return (
-                                                    <div key={cat.id} className={`flex items-center justify-between px-4 py-3 rounded-lg border transition-all cursor-pointer ${
-                                                        isOverridden
-                                                            ? isActive ? 'bg-amber-50 border-amber-300' : 'bg-amber-50/50 border-amber-200'
-                                                            : isActive ? 'bg-teal-50 border-teal-300' : 'bg-yim-50 border-yim-200'
-                                                    }`} onClick={() => toggleOverride(cat.id)}>
+                                                <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isOverridden ? 'bg-amber-50/40 border-amber-300' : isActive ? 'bg-yim-50 border-yim-500/40' : 'bg-white border-yim-200'}`}>
+                                                    {/* Category row — klik op rij = expand, klik op checkbox = toggle */}
+                                                    <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
+                                                        onClick={() => canExpand && toggleExpand(cat.id)}>
                                                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isActive ? isOverridden ? 'bg-amber-500' : 'bg-teal-500' : 'bg-yim-200'}`}>
+                                                            {/* Checkbox — apart klikbaar */}
+                                                            <button onClick={(e) => { e.stopPropagation(); toggleOverride(cat.id); }}
+                                                                className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${isActive ? isOverridden ? 'bg-amber-500 border-amber-500' : 'bg-yim-500 border-yim-500' : 'bg-white border-yim-300 hover:border-yim-500'}`}
+                                                                title={isActive ? 'Klik om te verbergen' : 'Klik om te tonen'}>
                                                                 {isActive && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                                            </div>
-                                                            <div className="min-w-0">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`text-sm font-medium ${isActive ? 'text-yim-600' : 'text-yim-400'}`}>{cat.name}</span>
-                                                                    {isSensitive && <svg className="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>}
-                                                                    {isOverridden && <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">OVERRIDE</span>}
+                                                            </button>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
+                                                                    {isAllOrNothing && (
+                                                                        <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control">
+                                                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                    )}
                                                                 </div>
                                                                 {isDerived && reasons.length > 0 && (
-                                                                    <p className="text-[11px] text-yim-500 mt-0.5 truncate">{reasons.slice(0, 3).join(', ')}{reasons.length > 3 ? ` +${reasons.length - 3}` : ''}</p>
+                                                                    <p className="text-[11px] text-yim-500 opacity-70 mt-0.5 truncate">Afgeleid uit: {reasons.slice(0, 3).join(', ')}{reasons.length > 3 ? ` +${reasons.length - 3}` : ''}</p>
                                                                 )}
                                                                 {!isDerived && !isOverridden && (
                                                                     <p className="text-[11px] text-yim-400 mt-0.5">Niet nodig voor huidige taken</p>
                                                                 )}
+                                                                {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
+                                                                    <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar</p>
+                                                                )}
+                                                                {isActive && hiddenFieldCount > 0 && (
+                                                                    <p className="text-[11px] text-amber-600 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar · {hiddenFieldCount} handmatig verborgen</p>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex-shrink-0 ml-2">
-                                                            {isDerived && !isOverridden && <span className="text-[10px] text-teal-600 bg-teal-100 px-1.5 py-0.5 rounded font-medium">Afgeleid</span>}
+                                                        <div className="flex-shrink-0 ml-2 flex items-center gap-1">
+                                                            {isOverridden && (
+                                                                <span className="text-[10px] text-amber-600 italic">Override</span>
+                                                            )}
+                                                            {canExpand && (
+                                                                <span className="p-1.5 text-yim-400">
+                                                                    <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
+
+                                                    {/* Field-level drill-down — chips naast elkaar */}
+                                                    {isExpanded && canExpand && (
+                                                        <div className="border-t border-yim-200/60 bg-white/60 px-4 py-3">
+                                                            <p className="text-[11px] text-yim-500 mb-2">
+                                                                {!isActive
+                                                                    ? 'Categorie staat uit. Klik op een veld om de categorie te activeren met alléén dat veld zichtbaar.'
+                                                                    : 'Klik op een chip om dat veld individueel te verbergen.'}
+                                                            </p>
+                                                            <div className={`flex flex-wrap gap-1.5 transition-opacity ${!isActive ? 'opacity-50' : ''}`}>
+                                                                {cat.fields.map(field => {
+                                                                    const fieldHidden = catFieldOverrides[field.id] === false;
+                                                                    const fieldSensitivity = field.sensitivity || cat.sensitivity;
+                                                                    const dotColor = fieldSensitivity === 'zeer_gevoelig' ? '#EF4444' : fieldSensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
+                                                                    const isLocked = field.policyLocked === true;
+                                                                    const showCheck = isActive && !fieldHidden && !isLocked;
+                                                                    const chipClass = isLocked
+                                                                        ? 'bg-yim-100/60 text-yim-400 border-yim-300 cursor-not-allowed'
+                                                                        : showCheck
+                                                                            ? 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
+                                                                            : 'bg-white text-yim-400 border-yim-200 hover:border-yim-500';
+                                                                    const titleText = isLocked
+                                                                        ? (field.policyReason || 'Door policy uitgeschakeld — niet wijzigbaar')
+                                                                        : !isActive
+                                                                            ? `Activeer '${cat.name}' met alleen dit veld zichtbaar`
+                                                                            : fieldHidden ? 'Klik om te tonen' : 'Klik om te verbergen';
+                                                                    if (isLocked) {
+                                                                        return (
+                                                                            <span key={field.id} className="relative group inline-flex">
+                                                                                <button disabled
+                                                                                    className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                                    style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
+                                                                                    <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                                                    </svg>
+                                                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor, opacity: 0.4 }}></span>
+                                                                                    {field.name}
+                                                                                </button>
+                                                                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-64">
+                                                                                    <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
+                                                                                        <span className="flex items-center gap-1.5 font-semibold mb-1">
+                                                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                                                            Company policy
+                                                                                        </span>
+                                                                                        {titleText}
+                                                                                    </span>
+                                                                                    <span className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-yim-700"></span>
+                                                                                </span>
+                                                                            </span>
+                                                                        );
+                                                                    }
+                                                                    return (
+                                                                        <button key={field.id} onClick={() => toggleField(cat.id, field.id)}
+                                                                            className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                            style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
+                                                                            title={titleText}>
+                                                                            {showCheck && (
+                                                                                <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                                                </svg>
+                                                                            )}
+                                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
+                                                                            {field.name}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* All-or-nothing notice (subtle) */}
+                                                    {isActive && isAllOrNothing && (
+                                                        <div className="border-t border-yim-100 px-4 py-2 bg-yim-50/40">
+                                                            <p className="text-[11px] text-yim-500 italic">Alleen aan/uit op categorie-niveau (zeer gevoelige data).</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 );
                                             })}
                                         </div>
@@ -2397,6 +3365,7 @@
                                                 </button>
                                             </div>
                                         </div>
+
                                     </div>
                                     );
                                 })()}
@@ -2714,6 +3683,20 @@
                                                 <button onClick={() => setEditForm(prev => ({ ...prev, canReveal: !prev.canReveal }))}
                                                     className={`relative w-12 h-7 rounded-full transition-all ${editForm.canReveal ? 'bg-[#6daeba]' : 'bg-gray-300'}`}>
                                                     <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${editForm.canReveal ? 'left-[22px]' : 'left-0.5'}`}></div>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Dossier bewerken */}
+                                        <div className="border-t border-yim-200 bg-blue-50/30">
+                                            <div className="px-5 py-3 flex items-center justify-between">
+                                                <div>
+                                                    <label className="text-sm font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Dossier bewerken</label>
+                                                    {editForm.canEditDossier && <p className="text-xs text-yim-600 opacity-50 mt-0.5">Mag dossier wijzigen — binnen eigen inzage-grenzen</p>}
+                                                </div>
+                                                <button onClick={() => setEditForm(prev => ({ ...prev, canEditDossier: !prev.canEditDossier }))}
+                                                    className={`relative w-12 h-7 rounded-full transition-all ${editForm.canEditDossier ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                                                    <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${editForm.canEditDossier ? 'left-[22px]' : 'left-0.5'}`}></div>
                                                 </button>
                                             </div>
                                         </div>
@@ -3063,9 +4046,6 @@
                                 <div className="flex bg-white/10 rounded-lg p-0.5">
                                     <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         1: Profielen
-                                    </button>
-                                    <button onClick={() => setConcept('C')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'C' ? 'bg-blue-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        2: Inzageniveau
                                     </button>
                                     <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         3: Taakafleiding
