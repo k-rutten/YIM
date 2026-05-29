@@ -231,12 +231,11 @@
                 { id: 'country_of_residence', name: 'Land van vestiging' }
               ]},
             { id: 'government_id', name: 'Overheids-ID', uiGroup: 'identificatie', sensitivity: 'zeer_gevoelig',
-              allOrNothing: true,
               fields: [
                 { id: 'id_type', name: 'Type ID Bewijs' },
                 { id: 'id_document_number', name: 'Documentnummer identiteitsbewijs' },
                 { id: 'id_expiration_date', name: 'Geldigheidsdatum identiteitsbewijs' },
-                { id: 'bsn', name: 'BSN / EU persoonsnummer' },
+                { id: 'bsn', name: 'BSN / EU persoonsnummer', policyLocked: true, policyReason: 'Door policy uitgeschakeld — BSN nooit zichtbaar voor cross-company rollen' },
                 { id: 'vog', name: 'VOG (Verklaring omtrent gedrag)' }
               ]},
             { id: 'employment', name: 'Arbeidsrelatie', uiGroup: 'arbeid', sensitivity: 'gevoelig',
@@ -1124,7 +1123,11 @@
             // Resolve visibility based on active concept
             const profile = concept === 'A' ? visibilityProfiles.find(p => p.id === role.visibilityProfileId) : null;
             const canReveal = concept === 'A' ? (profile?.canReveal || false) : (role.canReveal || false);
-            const canEditDossier = concept === 'A' ? (profile?.canEditDossier || false) : (role.canEditDossier || false);
+            // Bewerkrecht: Concept G leidt af uit de taak 'dossier_bewerken' (single source of truth).
+            // Concept A leest 'm nog van het profiel (geen taken in dat model).
+            const canEditDossier = concept === 'A'
+                ? (profile?.canEditDossier || false)
+                : (role.roleSettings?.taken || []).includes('dossier_bewerken');
 
             // Log field reveal
             const logFieldReveal = (category, field, value) => {
@@ -2631,10 +2634,11 @@
                                                         <div className="flex-1" style={{ backgroundColor: '#F59E0B', opacity: maxLevel >= 3 ? 1 : 0.3 }}></div>
                                                         <div className="flex-1" style={{ backgroundColor: '#EF4444', opacity: maxLevel >= 4 ? 1 : 0.3 }}></div>
                                                     </div>
-                                                    <div className="absolute -bottom-1 transition-all duration-300"
+                                                    <div className="absolute -bottom-1.5 transition-all duration-300"
                                                         style={{ left: `calc(${positionPct}% + (${50 - positionPct}% / 4))`, transform: 'translateX(-50%)' }}>
-                                                        <svg className="w-3 h-3" viewBox="0 0 10 10" fill={markerColor}>
-                                                            <path d="M5 0 L10 8 L0 8 Z" />
+                                                        <svg className="w-4 h-4" viewBox="0 0 12 12">
+                                                            {/* Witte achtergrond + donkere border — altijd zichtbaar tegen elke segmentkleur */}
+                                                            <path d="M6 0 L12 10 L0 10 Z" fill="white" stroke="#346474" strokeWidth="1.5" strokeLinejoin="round" />
                                                         </svg>
                                                     </div>
                                                 </div>
@@ -2651,7 +2655,7 @@
                                             const isActive = !!profileEditForm.allowedCategories?.[cat.id];
                                             const isAllOrNothing = cat.allOrNothing === true;
                                             const isExpanded = expandedCatId === `profile-${cat.id}`;
-                                            const canExpand = isActive && !isAllOrNothing;
+                                            const canExpand = !isAllOrNothing;
                                             const fieldOverrides = (profileEditForm._fieldOverrides || {})[cat.id] || {};
                                             const hiddenFieldCount = Object.values(fieldOverrides).filter(v => v === false).length;
                                             const totalFields = cat.fields.length;
@@ -2668,6 +2672,22 @@
                                             };
                                             const toggleField = (fieldId) => {
                                                 setProfileEditForm(prev => {
+                                                    const catActive = !!prev.allowedCategories?.[cat.id];
+                                                    // Categorie uit + klik op chip → activeer + alleen dit veld zichtbaar (rest via override op false)
+                                                    if (!catActive) {
+                                                        const newOverrides = {};
+                                                        cat.fields.forEach(f => {
+                                                            if (f.id !== fieldId) newOverrides[f.id] = false;
+                                                        });
+                                                        const fo = { ...(prev._fieldOverrides || {}) };
+                                                        fo[cat.id] = newOverrides;
+                                                        return {
+                                                            ...prev,
+                                                            allowedCategories: { ...prev.allowedCategories, [cat.id]: true },
+                                                            _fieldOverrides: fo
+                                                        };
+                                                    }
+                                                    // Normaal: toggle individuele veld-zichtbaarheid
                                                     const fo = { ...(prev._fieldOverrides || {}) };
                                                     const cf = { ...(fo[cat.id] || {}) };
                                                     if (cf[fieldId] === false) delete cf[fieldId];
@@ -2718,22 +2738,59 @@
                                                 {/* Field-level drill-down — chips naast elkaar */}
                                                 {isExpanded && canExpand && (
                                                     <div className="border-t border-yim-200/60 bg-white/60 px-4 py-3">
-                                                        <p className="text-[11px] text-yim-500 mb-2">Klik op een chip om dat veld individueel te verbergen.</p>
-                                                        <div className="flex flex-wrap gap-1.5">
+                                                        <p className="text-[11px] text-yim-500 mb-2">
+                                                            {!isActive
+                                                                ? 'Categorie staat uit. Klik op een veld om de categorie te activeren met alléén dat veld zichtbaar.'
+                                                                : 'Klik op een chip om dat veld individueel te verbergen.'}
+                                                        </p>
+                                                        <div className={`flex flex-wrap gap-1.5 transition-opacity ${!isActive ? 'opacity-50' : ''}`}>
                                                             {cat.fields.map(field => {
                                                                 const fieldHidden = fieldOverrides[field.id] === false;
                                                                 const fieldSensitivity = field.sensitivity || cat.sensitivity;
                                                                 const dotColor = fieldSensitivity === 'zeer_gevoelig' ? '#EF4444' : fieldSensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
+                                                                const isLocked = field.policyLocked === true;
+                                                                const showCheck = isActive && !fieldHidden && !isLocked;
+                                                                const chipClass = isLocked
+                                                                    ? 'bg-yim-100/60 text-yim-400 border-yim-300 cursor-not-allowed'
+                                                                    : showCheck
+                                                                        ? 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
+                                                                        : 'bg-white text-yim-400 border-yim-200 hover:border-yim-500';
+                                                                const titleText = isLocked
+                                                                    ? (field.policyReason || 'Door policy uitgeschakeld — niet wijzigbaar')
+                                                                    : !isActive
+                                                                        ? `Activeer '${cat.name}' met alleen dit veld zichtbaar`
+                                                                        : fieldHidden ? 'Klik om te tonen' : 'Klik om te verbergen';
+                                                                if (isLocked) {
+                                                                    return (
+                                                                        <span key={field.id} className="relative group inline-flex">
+                                                                            <button disabled
+                                                                                className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                                style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
+                                                                                <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                                                </svg>
+                                                                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor, opacity: 0.4 }}></span>
+                                                                                {field.name}
+                                                                            </button>
+                                                                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-64">
+                                                                                <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
+                                                                                    <span className="flex items-center gap-1.5 font-semibold mb-1">
+                                                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                                                        Company policy
+                                                                                    </span>
+                                                                                    {titleText}
+                                                                                </span>
+                                                                                <span className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-yim-700"></span>
+                                                                            </span>
+                                                                        </span>
+                                                                    );
+                                                                }
                                                                 return (
                                                                     <button key={field.id} onClick={() => toggleField(field.id)}
-                                                                        className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${
-                                                                            fieldHidden
-                                                                                ? 'bg-white text-yim-400 border-yim-200 italic'
-                                                                                : 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
-                                                                        }`}
+                                                                        className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                         style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
-                                                                        title={fieldHidden ? 'Klik om te tonen' : 'Klik om te verbergen'}>
-                                                                        {!fieldHidden && (
+                                                                        title={titleText}>
+                                                                        {showCheck && (
                                                                             <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                                                                             </svg>
@@ -2769,22 +2826,6 @@
                                             </div>
                                             <button onClick={() => setProfileEditForm(prev => ({ ...prev, canReveal: !prev.canReveal }))} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileEditForm.canReveal ? 'bg-yim-500' : 'bg-yim-300'}`}>
                                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${profileEditForm.canReveal ? 'translate-x-6' : 'translate-x-1'}`} />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* canEditDossier toggle */}
-                                    <div className="border-t border-yim-200 px-5 py-4 bg-yim-50">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <span className="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
-                                                <div>
-                                                    <p className="font-medium text-yim-600">Dossier bewerken</p>
-                                                    <p className="text-xs text-yim-600 opacity-60">Mag het dossier wijzigen (binnen eigen inzage-grenzen)</p>
-                                                </div>
-                                            </div>
-                                            <button onClick={() => setProfileEditForm(prev => ({ ...prev, canEditDossier: !prev.canEditDossier }))} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profileEditForm.canEditDossier ? 'bg-blue-500' : 'bg-yim-300'}`}>
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${profileEditForm.canEditDossier ? 'translate-x-6' : 'translate-x-1'}`} />
                                             </button>
                                         </div>
                                     </div>
@@ -3049,10 +3090,28 @@
 
                                     const toggleField = (catId, fieldId) => {
                                         setEditForm(prev => {
+                                            const liveD = deriveTo9Categories(prev.roleSettings || createDefaultRoleSettings()).allowedCategories;
+                                            const ov = prev._overrides || {};
+                                            const wasActive = ov[catId] !== undefined ? !!ov[catId] : !!liveD[catId];
+                                            const catDef = CATEGORIES.find(c => c.id === catId);
+
+                                            // Categorie uit + klik op chip → activeer + alleen dit veld zichtbaar (rest via override op false)
+                                            if (!wasActive) {
+                                                const newOv = { ...ov, [catId]: true };
+                                                const finalCats = { ...liveD };
+                                                Object.entries(newOv).forEach(([k, v]) => { finalCats[k] = v; });
+                                                const newOverrides = {};
+                                                (catDef?.fields || []).forEach(f => {
+                                                    if (f.id !== fieldId) newOverrides[f.id] = false;
+                                                });
+                                                const fo = { ...(prev._fieldOverrides || {}) };
+                                                fo[catId] = newOverrides;
+                                                return { ...prev, _overrides: newOv, allowedCategories: finalCats, _fieldOverrides: fo };
+                                            }
+
+                                            // Normaal: toggle individuele veld-zichtbaarheid
                                             const fo = { ...(prev._fieldOverrides || {}) };
                                             const catFields = { ...(fo[catId] || {}) };
-                                            // Default: alle velden ON wanneer categorie ON. Override flipt naar OFF.
-                                            // Tweede klik: terug naar default (delete override).
                                             if (catFields[fieldId] === false) {
                                                 delete catFields[fieldId];
                                             } else {
@@ -3151,7 +3210,7 @@
                                                 const isSensitive = cat.sensitivity === 'zeer_gevoelig';
                                                 const isAllOrNothing = cat.allOrNothing === true;
                                                 const isExpanded = expandedCatId === cat.id;
-                                                const canExpand = isActive && !isAllOrNothing;
+                                                const canExpand = !isAllOrNothing;
                                                 const catFieldOverrides = fieldOverrides[cat.id] || {};
                                                 const hiddenFieldCount = Object.values(catFieldOverrides).filter(v => v === false).length;
                                                 const totalFields = cat.fields.length;
@@ -3209,22 +3268,59 @@
                                                     {/* Field-level drill-down — chips naast elkaar */}
                                                     {isExpanded && canExpand && (
                                                         <div className="border-t border-yim-200/60 bg-white/60 px-4 py-3">
-                                                            <p className="text-[11px] text-yim-500 mb-2">Klik op een chip om dat veld individueel te verbergen.</p>
-                                                            <div className="flex flex-wrap gap-1.5">
+                                                            <p className="text-[11px] text-yim-500 mb-2">
+                                                                {!isActive
+                                                                    ? 'Categorie staat uit. Klik op een veld om de categorie te activeren met alléén dat veld zichtbaar.'
+                                                                    : 'Klik op een chip om dat veld individueel te verbergen.'}
+                                                            </p>
+                                                            <div className={`flex flex-wrap gap-1.5 transition-opacity ${!isActive ? 'opacity-50' : ''}`}>
                                                                 {cat.fields.map(field => {
                                                                     const fieldHidden = catFieldOverrides[field.id] === false;
                                                                     const fieldSensitivity = field.sensitivity || cat.sensitivity;
                                                                     const dotColor = fieldSensitivity === 'zeer_gevoelig' ? '#EF4444' : fieldSensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
+                                                                    const isLocked = field.policyLocked === true;
+                                                                    const showCheck = isActive && !fieldHidden && !isLocked;
+                                                                    const chipClass = isLocked
+                                                                        ? 'bg-yim-100/60 text-yim-400 border-yim-300 cursor-not-allowed'
+                                                                        : showCheck
+                                                                            ? 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
+                                                                            : 'bg-white text-yim-400 border-yim-200 hover:border-yim-500';
+                                                                    const titleText = isLocked
+                                                                        ? (field.policyReason || 'Door policy uitgeschakeld — niet wijzigbaar')
+                                                                        : !isActive
+                                                                            ? `Activeer '${cat.name}' met alleen dit veld zichtbaar`
+                                                                            : fieldHidden ? 'Klik om te tonen' : 'Klik om te verbergen';
+                                                                    if (isLocked) {
+                                                                        return (
+                                                                            <span key={field.id} className="relative group inline-flex">
+                                                                                <button disabled
+                                                                                    className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                                    style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
+                                                                                    <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                                                    </svg>
+                                                                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor, opacity: 0.4 }}></span>
+                                                                                    {field.name}
+                                                                                </button>
+                                                                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-64">
+                                                                                    <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
+                                                                                        <span className="flex items-center gap-1.5 font-semibold mb-1">
+                                                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                                                            Company policy
+                                                                                        </span>
+                                                                                        {titleText}
+                                                                                    </span>
+                                                                                    <span className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-yim-700"></span>
+                                                                                </span>
+                                                                            </span>
+                                                                        );
+                                                                    }
                                                                     return (
                                                                         <button key={field.id} onClick={() => toggleField(cat.id, field.id)}
-                                                                            className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${
-                                                                                fieldHidden
-                                                                                    ? 'bg-white text-yim-400 border-yim-200 italic'
-                                                                                    : 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
-                                                                            }`}
+                                                                            className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                             style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
-                                                                            title={fieldHidden ? 'Klik om te tonen' : 'Klik om te verbergen'}>
-                                                                            {!fieldHidden && (
+                                                                            title={titleText}>
+                                                                            {showCheck && (
                                                                                 <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                                                                                 </svg>
@@ -3270,19 +3366,6 @@
                                             </div>
                                         </div>
 
-                                        {/* canEditDossier */}
-                                        <div className="border-t border-yim-200 px-5 py-4 bg-blue-50/30">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-yim-600">Dossier bewerken</p>
-                                                    <p className="text-xs text-yim-500 opacity-60">Mag dossier wijzigen — binnen eigen inzage-grenzen</p>
-                                                </div>
-                                                <button onClick={() => setEditForm(prev => ({ ...prev, canEditDossier: !prev.canEditDossier }))}
-                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.canEditDossier ? 'bg-blue-500' : 'bg-yim-300'}`}>
-                                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${editForm.canEditDossier ? 'translate-x-6' : 'translate-x-1'}`} />
-                                                </button>
-                                            </div>
-                                        </div>
                                     </div>
                                     );
                                 })()}
@@ -3963,9 +4046,6 @@
                                 <div className="flex bg-white/10 rounded-lg p-0.5">
                                     <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         1: Profielen
-                                    </button>
-                                    <button onClick={() => setConcept('C')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'C' ? 'bg-blue-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        2: Inzageniveau
                                     </button>
                                     <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         3: Taakafleiding
