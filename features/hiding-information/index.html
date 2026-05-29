@@ -2679,7 +2679,7 @@
                                             };
 
                                             return (
-                                            <div key={cat.id} className="rounded-lg overflow-hidden bg-white border border-yim-200 transition-colors">
+                                            <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isActive ? 'bg-yim-50 border-yim-500/40' : 'bg-white border-yim-200'}`}>
                                                 <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
                                                     onClick={() => canExpand && setExpandedCatId(isExpanded ? null : `profile-${cat.id}`)}>
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -2717,7 +2717,7 @@
 
                                                 {/* Field-level drill-down — chips naast elkaar */}
                                                 {isExpanded && canExpand && (
-                                                    <div className="border-t border-yim-100 bg-yim-50/40 px-4 py-3">
+                                                    <div className="border-t border-yim-200/60 bg-white/60 px-4 py-3">
                                                         <p className="text-[11px] text-yim-500 mb-2">Klik op een chip om dat veld individueel te verbergen.</p>
                                                         <div className="flex flex-wrap gap-1.5">
                                                             {cat.fields.map(field => {
@@ -3158,7 +3158,7 @@
                                                 const visibleFieldCount = totalFields - hiddenFieldCount;
 
                                                 return (
-                                                <div key={cat.id} className={`rounded-lg overflow-hidden bg-white border transition-colors ${isOverridden ? 'border-amber-300' : 'border-yim-200'}`}>
+                                                <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isOverridden ? 'bg-amber-50/40 border-amber-300' : isActive ? 'bg-yim-50 border-yim-500/40' : 'bg-white border-yim-200'}`}>
                                                     {/* Category row — klik op rij = expand, klik op checkbox = toggle */}
                                                     <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
                                                         onClick={() => canExpand && toggleExpand(cat.id)}>
@@ -3208,7 +3208,7 @@
 
                                                     {/* Field-level drill-down — chips naast elkaar */}
                                                     {isExpanded && canExpand && (
-                                                        <div className="border-t border-yim-100 bg-yim-50/40 px-4 py-3">
+                                                        <div className="border-t border-yim-200/60 bg-white/60 px-4 py-3">
                                                             <p className="text-[11px] text-yim-500 mb-2">Klik op een chip om dat veld individueel te verbergen.</p>
                                                             <div className="flex flex-wrap gap-1.5">
                                                                 {cat.fields.map(field => {
