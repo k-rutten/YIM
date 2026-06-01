@@ -403,16 +403,17 @@
             { id: 'examenpoging_toevoegen', name: 'Voeg examenpoging toe' },
             { id: 'autorisaties_beoordelen', name: 'Autorisaties beoordelen' }
         ];
-        // CompanyAccessLevel uit YIM-productie (CompanyAccessLevel.cs).
+        // CompanyAccessLevel uit YIM-productie (CompanyAccessLevel.cs + common-nl.json).
         // Hierarchie: None ⊆ Own ⊆ Employer ⊆ EmployerAndSubContractors ⊆ All.
         // Departments en ManagerAndEmployees zijn special cases naast deze keten.
+        // NL-labels exact zoals in productie.
         const NIVEAU_OPTIONS = [
             { id: 'own', name: 'Eigen' },
             { id: 'employer', name: 'Werkgever' },
+            { id: 'employerAndSubContractors', name: 'Structuur' },
             { id: 'departments', name: 'Afdelingen' },
-            { id: 'employerAndSubContractors', name: 'Werkgever + onderaannemers' },
-            { id: 'all', name: 'Structuur' },
-            { id: 'managerAndEmployees', name: 'Manager + medewerkers' }
+            { id: 'managerAndEmployees', name: 'Manager/Medewerkers' },
+            { id: 'all', name: 'Alles' }
         ];
         const DOSSIERNIVEAU = [
             { id: 'aanmeldingen', name: 'Aanmeldingen' },
@@ -3150,10 +3151,10 @@
                                                 const lvlNote = {
                                                     own: 'Niveau Eigen — deze rol ziet alleen de eigen gebruiker, geen andere personen.',
                                                     employer: 'Niveau Werkgever — deze rol ziet personen in dienst bij de eigen werkgever. Onderaannemer-personen niet.',
+                                                    employerAndSubContractors: 'Niveau Structuur — deze rol ziet personen van de eigen werkgever én van onderaannemers van die werkgever.',
                                                     departments: 'Niveau Afdelingen — deze rol ziet personen binnen toegewezen afdelingen.',
-                                                    employerAndSubContractors: 'Niveau Werkgever + onderaannemers — deze rol ziet ook personen van onderaannemers van de eigen werkgever.',
-                                                    all: 'Niveau Structuur — deze rol ziet personen binnen de volledige tenant-structuur.',
-                                                    managerAndEmployees: 'Niveau Manager + medewerkers — deze rol ziet directe-rapportage relaties.'
+                                                    managerAndEmployees: 'Niveau Manager/Medewerkers — deze rol ziet directe-rapportage relaties.',
+                                                    all: 'Niveau Alles — deze rol ziet alle personen binnen de tenant, ongeacht werkgever.'
                                                 }[lvl];
                                                 return lvlNote ? (
                                                     <div className="mt-2 px-2 py-1.5 bg-yim-50 border border-yim-200 rounded text-[11px] text-yim-700">
