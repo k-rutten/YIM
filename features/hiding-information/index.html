@@ -4236,22 +4236,62 @@
                 STATUS: { label: 'Status', desc: 'Boolean / status-indicator', color: 'bg-blue-100 text-blue-700 border-blue-300' },
                 VALIDITY: { label: 'Geldigheid', desc: 'Verloopt op / Geldig tot', color: 'bg-purple-100 text-purple-700 border-purple-300' },
                 LAST_N: { label: 'Laatste-N', desc: 'Alleen laatste N karakters', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+                FIRST_N: { label: 'Eerste-N', desc: 'Alleen eerste N karakters', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+                INITIALS: { label: 'Initialen', desc: 'Voornamen → initialen (J.M. de Vries)', color: 'bg-amber-100 text-amber-700 border-amber-300' },
                 RANGE: { label: 'Bereik', desc: 'Categorie / range ipv exact', color: 'bg-pink-100 text-pink-700 border-pink-300' },
                 AREA: { label: 'Gebied', desc: 'Geografisch grof (postcode-deel)', color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
                 AGGREGATE: { label: 'Aggregaat', desc: 'Telling / som zonder details', color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+                TOKENIZED: { label: 'Token', desc: 'Match-token voor dedup zonder PII (Mixpanel-pattern)', color: 'bg-violet-100 text-violet-700 border-violet-300' },
+                COHORT: { label: 'Cohort (k-anon)', desc: 'Hide-in-cohort: één van N met zelfde profiel', color: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300' },
+                REQUEST: { label: 'Op aanvraag', desc: 'Klik om toegang te vragen + audit-event', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+                TIME_REVEAL: { label: 'Tijdelijk', desc: '5s onthullen via canReveal + audit-log (PR7-pattern)', color: 'bg-teal-100 text-teal-700 border-teal-300' },
                 HIDDEN: { label: 'Verborgen', desc: 'Volledig gemaskeerd', color: 'bg-yim-100 text-yim-500 border-yim-300' }
             };
+            // Velden gebaseerd op YIM-productie Person.cs (28 public properties) + Workflows
             const FIELDS = [
-                { name: 'VCA-certificaat',          full: 'VCA-VOL 2007/2018, behaald 14-03-2024, geldig t/m 13-03-2028', modes: { FULL: 'VCA-VOL 2007/2018, behaald 14-03-2024, geldig t/m 13-03-2028', STATUS: 'Heeft geldig VCA-certificaat', VALIDITY: 'Geldig t/m 13-03-2028', HIDDEN: '••••' }, recommended: 'STATUS' },
-                { name: 'BHV-certificaat',          full: 'BHV-EHBO + Brand 2024, behaald 20-09-2024', modes: { FULL: 'BHV-EHBO + Brand 2024, behaald 20-09-2024', STATUS: 'Heeft BHV-certificaat', VALIDITY: 'Geldig t/m 19-09-2026', HIDDEN: '••••' }, recommended: 'STATUS' },
-                { name: 'VOG',                       full: 'VOG NP, profiel 84, afgegeven 12-01-2025, document #VOG-2025-08712', modes: { FULL: 'VOG NP profiel 84 · #VOG-2025-08712', STATUS: 'Heeft geldige VOG', VALIDITY: 'Afgegeven 12-01-2025', HIDDEN: '••••' }, recommended: 'STATUS' },
-                { name: 'Telefoon',                  full: '+31 6 1234 5678', modes: { FULL: '+31 6 1234 5678', LAST_N: '+31 6 **** 5678', HIDDEN: '••••' }, recommended: 'LAST_N' },
-                { name: 'BSN',                       full: '123 45 6789', modes: { FULL: '123 45 6789', LAST_N: '*** ** 6789', HIDDEN: '••••' }, recommended: 'HIDDEN' },
-                { name: 'Geboortedatum',             full: '14-07-1987', modes: { FULL: '14-07-1987', RANGE: 'Leeftijd: 35–45 jaar', VALIDITY: 'Volwassen (18+)', HIDDEN: '••••' }, recommended: 'RANGE' },
-                { name: 'Adres',                     full: '1226 University Dr, 3072 RD Rotterdam', modes: { FULL: '1226 University Dr, 3072 RD Rotterdam', AREA: '3072 ** RD · Rotterdam', RANGE: 'Rotterdam-Zuid', HIDDEN: '••••' }, recommended: 'AREA' },
-                { name: 'E-mail',                    full: 'jan.devries@shellnederland.nl', modes: { FULL: 'jan.devries@shellnederland.nl', LAST_N: 'j***********@shellnederland.nl', AREA: '@shellnederland.nl (alleen domein)', HIDDEN: '••••' }, recommended: 'AREA' },
-                { name: 'ID-document',               full: 'Paspoort NL · NX12345AB · vervalt 04-2031', modes: { FULL: 'Paspoort NL · NX12345AB · vervalt 04-2031', STATUS: 'Heeft geldig ID-document', VALIDITY: 'Type: Paspoort · vervalt 04-2031', HIDDEN: '••••' }, recommended: 'VALIDITY' },
-                { name: 'Certificaten (overig)',     full: 'VCA basis · BHV · NEN-3140 · ATEX · 4 certificaten', modes: { FULL: 'VCA basis · BHV · NEN-3140 · ATEX', AGGREGATE: '4 geldige certificaten · 0 verlopen', HIDDEN: '••••' }, recommended: 'AGGREGATE' }
+                // ===== Identity / Persoonsgegevens =====
+                { name: 'Voornaam',                  cat: 'Identity',    modes: { FULL: 'Jan', FIRST_N: 'J***', INITIALS: 'J.', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Achternaam',                cat: 'Identity',    modes: { FULL: 'de Vries', FIRST_N: 'd***', INITIALS: 'de V.', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Volledige naam',            cat: 'Identity',    modes: { FULL: 'Jan Marcel de Vries', INITIALS: 'J.M. de Vries', FIRST_N: 'J*** *** de Vries', HIDDEN: '••••' }, recommended: 'INITIALS' },
+                { name: 'Personeelsnummer',          cat: 'Identity',    modes: { FULL: 'EMP-2024-08712', LAST_N: '*** 8712', TOKENIZED: 'emp_a3f8d2', HIDDEN: '••••' }, recommended: 'LAST_N' },
+                { name: 'Foto',                      cat: 'Identity',    modes: { FULL: '[foto-thumbnail]', STATUS: 'Heeft foto (uploaded 14-03-2024)', VALIDITY: 'Foto laatst bijgewerkt 14-03-2024', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Contact =====
+                { name: 'Telefoon',                  cat: 'Contact',     modes: { FULL: '+31 6 1234 5678', LAST_N: '+31 6 **** 5678', FIRST_N: '+31 6 1234 ****', AREA: '+31 6 (Nederlands mobiel)', HIDDEN: '••••' }, recommended: 'LAST_N' },
+                { name: 'E-mail',                    cat: 'Contact',     modes: { FULL: 'jan.devries@shellnederland.nl', LAST_N: 'j***********@shellnederland.nl', AREA: '@shellnederland.nl (domein)', HIDDEN: '••••' }, recommended: 'AREA' },
+                { name: 'Adres',                     cat: 'Contact',     modes: { FULL: '1226 University Dr, 3072 RD Rotterdam', AREA: '3072 ** RD · Rotterdam', RANGE: 'Rotterdam-Zuid', HIDDEN: '••••' }, recommended: 'AREA' },
+                { name: 'Plaats / Land',             cat: 'Contact',     modes: { FULL: 'Rotterdam, Nederland', AREA: 'Zuid-Holland, NL', RANGE: 'EU-resident', HIDDEN: '••••' }, recommended: 'FULL' },
+                // ===== Government-ID (extra gevoelig) =====
+                { name: 'BSN',                       cat: 'Government',  modes: { FULL: '123 45 6789', LAST_N: '*** ** 6789', TOKENIZED: 'bsn_t9a2c4', TIME_REVEAL: '5s onthullen (audit-log)', REQUEST: 'Klik om toegang te vragen', HIDDEN: '••••' }, recommended: 'HIDDEN' },
+                { name: 'ID-document',               cat: 'Government',  modes: { FULL: 'Paspoort NL · NX12345AB · vervalt 04-2031', STATUS: 'Heeft geldig ID', VALIDITY: 'Paspoort · vervalt 04-2031', LAST_N: '****-AB', HIDDEN: '••••' }, recommended: 'VALIDITY' },
+                { name: 'VOG',                       cat: 'Government',  modes: { FULL: 'VOG NP profiel 84 · #VOG-2025-08712', STATUS: 'Heeft geldige VOG', VALIDITY: 'Afgegeven 12-01-2025', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Geboortedatum',             cat: 'Government',  modes: { FULL: '14-07-1987', RANGE: 'Leeftijd: 35–45 jaar', STATUS: 'Volwassen (18+)', COHORT: 'Eén van 25 personen, 35–45 jr', HIDDEN: '••••' }, recommended: 'RANGE' },
+                { name: 'Nationaliteit',             cat: 'Government',  modes: { FULL: 'Nederlandse', STATUS: 'EU-onderdaan', COHORT: 'Eén van 142 NL-paspoort houders', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Employment =====
+                { name: 'Werkgever',                 cat: 'Employment',  modes: { FULL: 'ABC Bouw B.V.', AREA: 'Onderaannemer (regio Zuid)', AGGREGATE: '1 van 3 werkgevers', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'KVK-nummer werkgever',      cat: 'Employment',  modes: { FULL: '24123456', LAST_N: '*** 3456', TOKENIZED: 'kvk_b7d', HIDDEN: '••••' }, recommended: 'LAST_N' },
+                { name: 'Hoofdaannemer',             cat: 'Employment',  modes: { FULL: 'Shell Nederland B.V.', AREA: 'Petrochemie sector', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Functie',                   cat: 'Employment',  modes: { FULL: 'Onderhoudsmonteur · NEN-3140', RANGE: 'Technisch personeel', AGGREGATE: '1 van 12 monteurs', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Contractperiode',           cat: 'Employment',  modes: { FULL: '02-01-2025 t/m 31-12-2026', VALIDITY: 'Loopt tot 31-12-2026', RANGE: '6-12 maanden', STATUS: 'Actief contract', HIDDEN: '••••' }, recommended: 'VALIDITY' },
+                // ===== Sociale lasten (zeer gevoelig) =====
+                { name: 'Sociaal verzekerd NL',      cat: 'Sociale',     modes: { FULL: 'Ja, sinds 02-01-2025', STATUS: 'Sociaal verzekerd: Ja', VALIDITY: 'Sinds 02-01-2025', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'A1-document',               cat: 'Sociale',     modes: { FULL: 'A1 #NL-2025-A1-12345 · geldig t/m 31-12-2026', STATUS: 'Heeft geldige A1', VALIDITY: 'Geldig t/m 31-12-2026', LAST_N: '****-12345', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Werkzaamheden 50%+ klant',  cat: 'Sociale',     modes: { FULL: 'Ja, gemeld bij PostedWorkers', STATUS: 'Compliant', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Certificaten (overig) =====
+                { name: 'VCA-certificaat',           cat: 'Certificaten', modes: { FULL: 'VCA-VOL · behaald 14-03-2024 · t/m 13-03-2028', STATUS: 'Heeft geldig VCA', VALIDITY: 'Geldig t/m 13-03-2028', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'BHV-certificaat',           cat: 'Certificaten', modes: { FULL: 'BHV-EHBO + Brand · behaald 20-09-2024', STATUS: 'Heeft BHV', VALIDITY: 'Geldig t/m 19-09-2026', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Werkvergunning',            cat: 'Certificaten', modes: { FULL: 'WV-NL · #WV-2024-92831 · geldig t/m 14-03-2027', STATUS: 'Heeft werkvergunning', VALIDITY: 'Geldig t/m 14-03-2027', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Rijbewijs',                 cat: 'Certificaten', modes: { FULL: 'B+E · #5832118273 · geldig t/m 04-2030', STATUS: 'Heeft rijbewijs B+E', VALIDITY: 'Geldig t/m 04-2030', LAST_N: '****-8273', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Certificaten (totaal)',     cat: 'Certificaten', modes: { FULL: 'VCA · BHV · NEN-3140 · ATEX · 4 certificaten', AGGREGATE: '4 geldige certificaten · 0 verlopen', RANGE: 'Compleet voor profiel', HIDDEN: '••••' }, recommended: 'AGGREGATE' },
+                // ===== Bestanden =====
+                { name: 'Arbeidsovereenkomst',       cat: 'Bestanden',   modes: { FULL: '[PDF: contract_2025.pdf, 245kb]', STATUS: 'Contract aanwezig', VALIDITY: 'Bijgewerkt 02-01-2025', AGGREGATE: '1 document', REQUEST: 'Klik om toegang aan te vragen', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Loonstroken',               cat: 'Bestanden',   modes: { FULL: '[12 PDFs, jan-dec 2025]', AGGREGATE: '12 loonstroken (laatste 12 mnd)', STATUS: 'Loonadministratie actueel', REQUEST: 'Klik om toegang aan te vragen', HIDDEN: '••••' }, recommended: 'AGGREGATE' },
+                // ===== Toegang & locatie =====
+                { name: 'Toegewezen locaties',       cat: 'Toegang',     modes: { FULL: 'Shell Botlek · Shell Pernis · BP Raffinaderij', AGGREGATE: '3 locaties toegewezen', AREA: 'Rotterdam-haven cluster', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Toegangszones',             cat: 'Toegang',     modes: { FULL: 'BASIS · Zone-A · Zone-Noord', AGGREGATE: '3 zones · BASIS-niveau', RANGE: 'Standaard contractor', HIDDEN: '••••' }, recommended: 'AGGREGATE' },
+                { name: 'Kenteken',                  cat: 'Toegang',     modes: { FULL: '12-AB-CD · NL', LAST_N: '**-AB-CD', AREA: 'NL-kenteken', STATUS: 'Heeft voertuig geregistreerd', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Blocking / status =====
+                { name: 'Geblokkeerd-status',        cat: 'Status',      modes: { FULL: 'Niet geblokkeerd · ', STATUS: 'Actief', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Blokkade-reden',            cat: 'Status',      modes: { FULL: '(N.v.t. — niet geblokkeerd)', STATUS: 'Geen blokkades', REQUEST: 'Klik voor blokkade-historie', HIDDEN: '••••' }, recommended: 'STATUS' }
             ];
             const [fieldModes, setFieldModes] = React.useState(() => Object.fromEntries(FIELDS.map(f => [f.name, f.recommended])));
 
@@ -4291,7 +4331,7 @@
                                 <p className="text-xs text-yim-500 mt-0.5">Kies per veld de minimaal-benodigde detail-niveau. Admin/role-config kan dit per rol bepalen.</p>
                             </div>
                             <table className="w-full text-sm">
-                                <thead className="bg-yim-50/40 text-[10px] uppercase tracking-wider text-yim-500">
+                                <thead className="bg-yim-50/40 text-[10px] uppercase tracking-wider text-yim-500 sticky top-0">
                                     <tr>
                                         <th className="text-left px-4 py-2">Veld</th>
                                         <th className="text-left px-4 py-2">Nuance-mode</th>
@@ -4300,40 +4340,54 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {FIELDS.map((f, i) => {
-                                        const currentMode = fieldModes[f.name];
-                                        const display = f.modes[currentMode];
-                                        const isRec = currentMode === f.recommended;
-                                        return (
-                                            <tr key={i} className="border-t border-yim-100 hover:bg-yim-50/30">
-                                                <td className="px-4 py-3 font-semibold text-yim-700">{f.name}</td>
-                                                <td className="px-4 py-3">
-                                                    <select value={currentMode}
-                                                        onChange={e => setFieldModes(prev => ({ ...prev, [f.name]: e.target.value }))}
-                                                        className="text-xs border border-yim-300 rounded px-2 py-1 bg-white">
-                                                        {Object.keys(f.modes).map(mk => (
-                                                            <option key={mk} value={mk}>{NUANCE_MODES[mk].label}</option>
-                                                        ))}
-                                                    </select>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`inline-block text-xs px-2 py-1 rounded border font-mono ${NUANCE_MODES[currentMode].color}`}>
-                                                        {display || '—'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    {isRec ? (
-                                                        <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded uppercase tracking-wider">✓ Aanbevolen</span>
-                                                    ) : (
-                                                        <button onClick={() => setFieldModes(prev => ({ ...prev, [f.name]: f.recommended }))}
-                                                            className="text-[10px] text-yim-500 underline hover:text-yim-700">
-                                                            Reset naar {NUANCE_MODES[f.recommended].label.toLowerCase()}
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                    {(() => {
+                                        // Group by category for readability
+                                        const grouped = {};
+                                        FIELDS.forEach(f => { (grouped[f.cat || 'Overig'] = grouped[f.cat || 'Overig'] || []).push(f); });
+                                        const rows = [];
+                                        Object.entries(grouped).forEach(([cat, fields]) => {
+                                            rows.push(
+                                                <tr key={`cat-${cat}`} className="bg-yim-50/60">
+                                                    <td colSpan={4} className="px-4 py-1.5 text-[10px] uppercase tracking-wider text-yim-600 font-bold">{cat} <span className="opacity-60 font-normal">· {fields.length} velden</span></td>
+                                                </tr>
+                                            );
+                                            fields.forEach((f, i) => {
+                                                const currentMode = fieldModes[f.name];
+                                                const display = f.modes[currentMode];
+                                                const isRec = currentMode === f.recommended;
+                                                rows.push(
+                                                    <tr key={`${cat}-${i}`} className="border-t border-yim-100 hover:bg-yim-50/30">
+                                                        <td className="px-4 py-2.5 font-semibold text-yim-700">{f.name}</td>
+                                                        <td className="px-4 py-2.5">
+                                                            <select value={currentMode}
+                                                                onChange={e => setFieldModes(prev => ({ ...prev, [f.name]: e.target.value }))}
+                                                                className="text-xs border border-yim-300 rounded px-2 py-1 bg-white">
+                                                                {Object.keys(f.modes).map(mk => (
+                                                                    <option key={mk} value={mk}>{NUANCE_MODES[mk].label}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-4 py-2.5">
+                                                            <span className={`inline-block text-xs px-2 py-1 rounded border font-mono ${NUANCE_MODES[currentMode].color}`}>
+                                                                {display || '—'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-2.5 text-right">
+                                                            {isRec ? (
+                                                                <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded uppercase tracking-wider">✓ Aanbevolen</span>
+                                                            ) : (
+                                                                <button onClick={() => setFieldModes(prev => ({ ...prev, [f.name]: f.recommended }))}
+                                                                    className="text-[10px] text-yim-500 underline hover:text-yim-700">
+                                                                    Reset
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            });
+                                        });
+                                        return rows;
+                                    })()}
                                 </tbody>
                             </table>
                         </div>
