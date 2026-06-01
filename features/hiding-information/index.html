@@ -921,16 +921,30 @@
                 const value = personFields[fieldId] || '';
 
                 if (!visible) {
-                    // Verborgen veld: vergrendeld + lock-icoon + niet bewerkbaar
+                    // Verborgen veld: vergrendeld + lock-icoon + niet bewerkbaar + hover-tooltip met categorie-reden
+                    const cat = CATEGORIES.find(c => c.id === def.categoryId);
+                    const catName = cat?.name || def.categoryId;
                     return (
-                        <div className="grid items-center gap-4 py-3 px-4 bg-yim-50 border-b border-yim-100 last:border-0" style={{ gridTemplateColumns: '240px 1fr' }}>
+                        <div className="grid items-center gap-4 py-3 px-4 bg-yim-50 border-b border-yim-100 last:border-0 relative group" style={{ gridTemplateColumns: '240px 1fr' }}>
                             <label className="text-sm text-yim-500 flex items-center gap-2">
                                 <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                 {def.name}
                             </label>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-yim-400 italic">Niet bewerkbaar — geen inzage</span>
-                                <span className="text-[10px] font-semibold text-yim-400 bg-yim-100 px-2 py-0.5 rounded uppercase tracking-wider">Vergrendeld</span>
+                                <span className="relative inline-flex">
+                                    <span className="text-[10px] font-semibold text-yim-400 bg-yim-100 px-2 py-0.5 rounded uppercase tracking-wider cursor-help">Vergrendeld</span>
+                                    <span className="absolute right-0 bottom-full mb-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-72">
+                                        <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
+                                            <span className="flex items-center gap-1.5 font-semibold mb-1">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                Buiten je inzage
+                                            </span>
+                                            Categorie <span className="font-semibold text-amber-200">{catName}</span> staat niet aan in deze rol. Het veld blijft onaangetast bij opslaan.
+                                        </span>
+                                        <span className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-yim-700"></span>
+                                    </span>
+                                </span>
                             </div>
                         </div>
                     );
@@ -1036,6 +1050,53 @@
                         {/* Main form area */}
                         <div className="flex-1 overflow-y-auto bg-yim-50/30 p-8">
                             <div className="max-w-4xl mx-auto">
+                                {/* 7c — Aggregate banner: editable / masked / locked fields over ALL steps */}
+                                {(() => {
+                                    const allFields = STEPS.flatMap(s => s.sections.flatMap(sec => sec.fields));
+                                    let editable = 0, masked = 0, locked = 0;
+                                    allFields.forEach(f => {
+                                        const def = FIELD_DEFS[f];
+                                        if (!def) return;
+                                        const visible = isFieldVisible(f);
+                                        const sensitive = isFieldSensitive(f);
+                                        if (!visible) locked++;
+                                        else if (sensitive) masked++;
+                                        else editable++;
+                                    });
+                                    return (
+                                        <div className="mb-6 bg-white border border-yim-200 rounded-lg px-5 py-4">
+                                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                                <div>
+                                                    <h2 className="text-sm font-bold text-yim-700 uppercase tracking-wider">Velden in dit dossier</h2>
+                                                    <p className="text-xs text-yim-500 opacity-70 mt-0.5">Wat je kan zien én bewerken hangt af van je rol-inzage.</p>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs">
+                                                    <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded px-2.5 py-1.5">
+                                                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                                        <span className="font-bold text-green-700">{editable}</span>
+                                                        <span className="text-green-600">bewerkbaar</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5" title="Velden waar je inzage hebt maar gevoeligheid hoog is — toon (5s) vereist om te bewerken">
+                                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                                        <span className="font-bold text-amber-700">{masked}</span>
+                                                        <span className="text-amber-600">gemaskeerd (toon-vereist)</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 bg-yim-100 border border-yim-200 rounded px-2.5 py-1.5" title="Velden buiten je rol-inzage — blijven onaangetast bij opslaan">
+                                                        <span className="w-2 h-2 rounded-full bg-yim-400"></span>
+                                                        <span className="font-bold text-yim-700">{locked}</span>
+                                                        <span className="text-yim-600">vergrendeld</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {locked > 0 && (
+                                                <p className="mt-3 text-[11px] text-yim-600 bg-yim-50 border-l-2 border-yim-400 px-3 py-1.5 rounded">
+                                                    <span className="font-semibold">{locked} vergrendelde velden</span> blijven onaangetast bij opslaan — je rol heeft geen inzage in deze categorieën.
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Step intro */}
                                 <div className="flex items-start gap-4 mb-6">
                                     <span className="w-8 h-8 rounded-full bg-yim-100 text-yim-700 flex items-center justify-center font-bold text-sm">
