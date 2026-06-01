@@ -3389,116 +3389,58 @@
                                             </div>
                                         </div>
 
-                                        {/* ===== SAMENVATTING van de rol (live preview) ===== */}
+                                        {/* ===== 'In de praktijk' — concrete persoon-type ✓/✗ obv niveau-keuze ===== */}
                                         {(() => {
                                             const niveau = editForm.roleSettings?.niveau;
-                                            const niveauOpt = NIVEAU_OPTIONS.find(o => o.id === niveau);
-                                            const niveauScope = {
-                                                own: 'Alleen de gebruiker zelf',
-                                                employer: 'Personen in dienst bij eigen werkgever',
-                                                employerAndSubContractors: 'Eigen werkgever + onderaannemers',
-                                                departments: 'Toegewezen afdelingen',
-                                                managerAndEmployees: 'Directe rapportages',
-                                                all: 'Alle personen in tenant'
-                                            }[niveau] || '—';
-                                            const takenCount = (editForm.roleSettings?.taken || []).length;
                                             const finalCats2 = { ...derivedCats };
                                             Object.entries(overrides).forEach(([k, v]) => { finalCats2[k] = v; });
-                                            const activeCats = Object.values(finalCats2).filter(Boolean).length;
-                                            const sensToLvl = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
-                                            const sensLabels = { 1: 'Geen', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
-                                            const sensColors = { 1: '#9CA3AF', 2: '#10B981', 3: '#F59E0B', 4: '#EF4444' };
-                                            let maxL = 1;
-                                            CATEGORIES.forEach(c => { if (finalCats2[c.id]) { const l = sensToLvl[c.sensitivity] || 1; if (l > maxL) maxL = l; } });
-                                            const canEdit = (editForm.roleSettings?.taken || []).includes('dossier_bewerken');
-
+                                            const heeftBSN = !!finalCats2.government_id;
+                                            const scenarios = {
+                                                own: [
+                                                    { label: 'Mezelf', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Andere medewerkers eigen bedrijf', visible: false, detail: 'niveau te beperkt' },
+                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau te beperkt' }
+                                                ],
+                                                employer: [
+                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau Werkgever blokkeert' },
+                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
+                                                ],
+                                                employerAndSubContractors: [
+                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Onderaannemer-personen', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' },
+                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
+                                                ],
+                                                all: [
+                                                    { label: 'Alle personen in tenant', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' }
+                                                ],
+                                                departments: [
+                                                    { label: 'Personen in toegewezen afdelingen', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Andere personen', visible: false, detail: 'buiten afdelings-scope' }
+                                                ],
+                                                managerAndEmployees: [
+                                                    { label: 'Directe rapportages', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Andere personen', visible: false, detail: 'buiten manager-relatie' }
+                                                ]
+                                            }[niveau] || [];
+                                            if (scenarios.length === 0) return null;
                                             return (
                                                 <div className="border-t-2 border-yim-200 px-5 py-4 bg-gradient-to-br from-yim-50 to-white">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <h4 className="text-sm font-bold text-yim-700 uppercase tracking-wider">Samenvatting</h4>
-                                                        <span className="text-[10px] text-yim-500 opacity-60 italic">Live preview voor admin</span>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="text-sm font-bold text-yim-700 uppercase tracking-wider">In de praktijk</h4>
+                                                        <span className="text-[10px] text-yim-500 opacity-60 italic">Bij niveau-keuze</span>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-3 text-xs">
-                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
-                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Rol</p>
-                                                            <p className="font-semibold text-yim-700 truncate">{editForm.name || '—'}</p>
-                                                            <p className="text-[11px] text-yim-500 opacity-70 mt-0.5 truncate">{editForm.description || ''}</p>
-                                                        </div>
-                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
-                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Bereik (niveau)</p>
-                                                            <p className="font-semibold text-yim-700">{niveauOpt ? niveauOpt.name.split(' (')[0] : '—'}</p>
-                                                            <p className="text-[11px] text-yim-500 opacity-70 mt-0.5">{niveauScope}</p>
-                                                        </div>
-                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
-                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Acties (taken)</p>
-                                                            <p className="font-semibold text-yim-700">{takenCount === 1 ? '1 taak' : `${takenCount} taken`}</p>
-                                                            <p className="text-[11px] mt-0.5" style={{ color: canEdit ? '#3b82f6' : '#9CA3AF' }}>{canEdit ? 'Mag dossier bewerken' : 'Geen bewerkrecht'}</p>
-                                                        </div>
-                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
-                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Data-inzage</p>
-                                                            <p className="font-semibold text-yim-700">{activeCats}/{CATEGORIES.length} categorieën</p>
-                                                            <p className="text-[11px] mt-0.5 font-semibold" style={{ color: sensColors[maxL] }}>Gevoeligheid: {sensLabels[maxL]}</p>
-                                                        </div>
-                                                    </div>
-                                                    {(overrideCount > 0 || fieldOverrideCount > 0) && (
-                                                        <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-                                                            <span className="font-semibold">Let op: </span>
-                                                            {overrideCount > 0 && `${overrideCount} categorie-override${overrideCount > 1 ? 's' : ''}`}
-                                                            {overrideCount > 0 && fieldOverrideCount > 0 && ' · '}
-                                                            {fieldOverrideCount > 0 && `${fieldOverrideCount} veld-override${fieldOverrideCount > 1 ? 's' : ''}`}
-                                                            {' — wijkt af van afgeleide standaard.'}
-                                                        </div>
-                                                    )}
-
-                                                    {/* In de praktijk — per persoon-type ✓/✗ bij gekozen niveau */}
-                                                    {(() => {
-                                                        const heeftBSN = !!finalCats2.government_id;
-                                                        const scenarios = {
-                                                            own: [
-                                                                { label: 'Mezelf', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                                { label: 'Andere medewerkers eigen bedrijf', visible: false, detail: 'niveau te beperkt' },
-                                                                { label: 'Onderaannemer-personen', visible: false, detail: 'niveau te beperkt' }
-                                                            ],
-                                                            employer: [
-                                                                { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                                { label: 'Onderaannemer-personen', visible: false, detail: 'niveau Werkgever blokkeert' },
-                                                                { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
-                                                            ],
-                                                            employerAndSubContractors: [
-                                                                { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                                { label: 'Onderaannemer-personen', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' },
-                                                                { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
-                                                            ],
-                                                            all: [
-                                                                { label: 'Alle personen in tenant', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' }
-                                                            ],
-                                                            departments: [
-                                                                { label: 'Personen in toegewezen afdelingen', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                                { label: 'Andere personen', visible: false, detail: 'buiten afdelings-scope' }
-                                                            ],
-                                                            managerAndEmployees: [
-                                                                { label: 'Directe rapportages', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                                { label: 'Andere personen', visible: false, detail: 'buiten manager-relatie' }
-                                                            ]
-                                                        }[niveau] || [];
-                                                        if (scenarios.length === 0) return null;
-                                                        return (
-                                                            <div className="mt-3 pt-3 border-t border-yim-200">
-                                                                <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-2">In de praktijk</p>
-                                                                <div className="space-y-1">
-                                                                    {scenarios.map((s, i) => (
-                                                                        <div key={i} className="flex items-center gap-2 text-[11px]">
-                                                                            <span className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 font-bold ${s.visible ? 'bg-green-100 text-green-700' : 'bg-yim-100 text-yim-400'}`}>
-                                                                                {s.visible ? '✓' : '✗'}
-                                                                            </span>
-                                                                            <span className="text-yim-700">{s.label}</span>
-                                                                            <span className="text-yim-500 opacity-70">— {s.detail}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
+                                                    <div className="space-y-1">
+                                                        {scenarios.map((s, i) => (
+                                                            <div key={i} className="flex items-center gap-2 text-[12px]">
+                                                                <span className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-[10px] ${s.visible ? 'bg-green-100 text-green-700' : 'bg-yim-100 text-yim-400'}`}>
+                                                                    {s.visible ? '✓' : '✗'}
+                                                                </span>
+                                                                <span className="text-yim-700 font-medium">{s.label}</span>
+                                                                <span className="text-yim-500 opacity-70">— {s.detail}</span>
                                                             </div>
-                                                        );
-                                                    })()}
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             );
                                         })()}
