@@ -406,14 +406,14 @@
         // CompanyAccessLevel uit YIM-productie (CompanyAccessLevel.cs + common-nl.json).
         // Hierarchie: None ⊆ Own ⊆ Employer ⊆ EmployerAndSubContractors ⊆ All.
         // Departments en ManagerAndEmployees zijn special cases naast deze keten.
-        // NL-labels exact zoals in productie.
+        // Label-format: huidig label + (Nieuw; voorgestelde herziene labels voor admin-duidelijkheid).
         const NIVEAU_OPTIONS = [
-            { id: 'own', name: 'Eigen' },
-            { id: 'employer', name: 'Werkgever' },
-            { id: 'employerAndSubContractors', name: 'Structuur' },
-            { id: 'departments', name: 'Afdelingen' },
-            { id: 'managerAndEmployees', name: 'Manager/Medewerkers' },
-            { id: 'all', name: 'Alles' }
+            { id: 'own', name: 'Eigen (Nieuw; Alleen mezelf)' },
+            { id: 'employer', name: 'Werkgever (Nieuw; Alleen eigen werknemers)' },
+            { id: 'employerAndSubContractors', name: 'Structuur (Nieuw; Eigen werkgever + onderaannemers)' },
+            { id: 'departments', name: 'Afdelingen (Nieuw; Toegewezen afdelingen)' },
+            { id: 'managerAndEmployees', name: 'Manager/Medewerkers (Nieuw; Directe rapportages)' },
+            { id: 'all', name: 'Alles (Nieuw; Alle bedrijven in tenant)' }
         ];
         const DOSSIERNIVEAU = [
             { id: 'aanmeldingen', name: 'Aanmeldingen' },
@@ -3388,6 +3388,70 @@
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {/* ===== SAMENVATTING van de rol (live preview) ===== */}
+                                        {(() => {
+                                            const niveau = editForm.roleSettings?.niveau;
+                                            const niveauOpt = NIVEAU_OPTIONS.find(o => o.id === niveau);
+                                            const niveauScope = {
+                                                own: 'Alleen de gebruiker zelf',
+                                                employer: 'Personen in dienst bij eigen werkgever',
+                                                employerAndSubContractors: 'Eigen werkgever + onderaannemers',
+                                                departments: 'Toegewezen afdelingen',
+                                                managerAndEmployees: 'Directe rapportages',
+                                                all: 'Alle personen in tenant'
+                                            }[niveau] || '—';
+                                            const takenCount = (editForm.roleSettings?.taken || []).length;
+                                            const finalCats2 = { ...derivedCats };
+                                            Object.entries(overrides).forEach(([k, v]) => { finalCats2[k] = v; });
+                                            const activeCats = Object.values(finalCats2).filter(Boolean).length;
+                                            const sensToLvl = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
+                                            const sensLabels = { 1: 'Geen', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
+                                            const sensColors = { 1: '#9CA3AF', 2: '#10B981', 3: '#F59E0B', 4: '#EF4444' };
+                                            let maxL = 1;
+                                            CATEGORIES.forEach(c => { if (finalCats2[c.id]) { const l = sensToLvl[c.sensitivity] || 1; if (l > maxL) maxL = l; } });
+                                            const canEdit = (editForm.roleSettings?.taken || []).includes('dossier_bewerken');
+
+                                            return (
+                                                <div className="border-t-2 border-yim-200 px-5 py-4 bg-gradient-to-br from-yim-50 to-white">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h4 className="text-sm font-bold text-yim-700 uppercase tracking-wider">Samenvatting</h4>
+                                                        <span className="text-[10px] text-yim-500 opacity-60 italic">Live preview voor admin</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3 text-xs">
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Rol</p>
+                                                            <p className="font-semibold text-yim-700 truncate">{editForm.name || '—'}</p>
+                                                            <p className="text-[11px] text-yim-500 opacity-70 mt-0.5 truncate">{editForm.description || ''}</p>
+                                                        </div>
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Bereik (niveau)</p>
+                                                            <p className="font-semibold text-yim-700">{niveauOpt ? niveauOpt.name.split(' (')[0] : '—'}</p>
+                                                            <p className="text-[11px] text-yim-500 opacity-70 mt-0.5">{niveauScope}</p>
+                                                        </div>
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Acties (taken)</p>
+                                                            <p className="font-semibold text-yim-700">{takenCount === 1 ? '1 taak' : `${takenCount} taken`}</p>
+                                                            <p className="text-[11px] mt-0.5" style={{ color: canEdit ? '#3b82f6' : '#9CA3AF' }}>{canEdit ? 'Mag dossier bewerken' : 'Geen bewerkrecht'}</p>
+                                                        </div>
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Data-inzage</p>
+                                                            <p className="font-semibold text-yim-700">{activeCats}/{CATEGORIES.length} categorieën</p>
+                                                            <p className="text-[11px] mt-0.5 font-semibold" style={{ color: sensColors[maxL] }}>Gevoeligheid: {sensLabels[maxL]}</p>
+                                                        </div>
+                                                    </div>
+                                                    {(overrideCount > 0 || fieldOverrideCount > 0) && (
+                                                        <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                                                            <span className="font-semibold">Let op: </span>
+                                                            {overrideCount > 0 && `${overrideCount} categorie-override${overrideCount > 1 ? 's' : ''}`}
+                                                            {overrideCount > 0 && fieldOverrideCount > 0 && ' · '}
+                                                            {fieldOverrideCount > 0 && `${fieldOverrideCount} veld-override${fieldOverrideCount > 1 ? 's' : ''}`}
+                                                            {' — wijkt af van afgeleide standaard.'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
 
                                     </div>
                                     );
