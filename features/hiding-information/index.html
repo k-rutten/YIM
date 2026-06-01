@@ -3449,6 +3449,56 @@
                                                             {' — wijkt af van afgeleide standaard.'}
                                                         </div>
                                                     )}
+
+                                                    {/* In de praktijk — per persoon-type ✓/✗ bij gekozen niveau */}
+                                                    {(() => {
+                                                        const heeftBSN = !!finalCats2.government_id;
+                                                        const scenarios = {
+                                                            own: [
+                                                                { label: 'Mezelf', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                                { label: 'Andere medewerkers eigen bedrijf', visible: false, detail: 'niveau te beperkt' },
+                                                                { label: 'Onderaannemer-personen', visible: false, detail: 'niveau te beperkt' }
+                                                            ],
+                                                            employer: [
+                                                                { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                                { label: 'Onderaannemer-personen', visible: false, detail: 'niveau Werkgever blokkeert' },
+                                                                { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
+                                                            ],
+                                                            employerAndSubContractors: [
+                                                                { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                                { label: 'Onderaannemer-personen', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' },
+                                                                { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
+                                                            ],
+                                                            all: [
+                                                                { label: 'Alle personen in tenant', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' }
+                                                            ],
+                                                            departments: [
+                                                                { label: 'Personen in toegewezen afdelingen', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                                { label: 'Andere personen', visible: false, detail: 'buiten afdelings-scope' }
+                                                            ],
+                                                            managerAndEmployees: [
+                                                                { label: 'Directe rapportages', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                                { label: 'Andere personen', visible: false, detail: 'buiten manager-relatie' }
+                                                            ]
+                                                        }[niveau] || [];
+                                                        if (scenarios.length === 0) return null;
+                                                        return (
+                                                            <div className="mt-3 pt-3 border-t border-yim-200">
+                                                                <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-2">In de praktijk</p>
+                                                                <div className="space-y-1">
+                                                                    {scenarios.map((s, i) => (
+                                                                        <div key={i} className="flex items-center gap-2 text-[11px]">
+                                                                            <span className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 font-bold ${s.visible ? 'bg-green-100 text-green-700' : 'bg-yim-100 text-yim-400'}`}>
+                                                                                {s.visible ? '✓' : '✗'}
+                                                                            </span>
+                                                                            <span className="text-yim-700">{s.label}</span>
+                                                                            <span className="text-yim-500 opacity-70">— {s.detail}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             );
                                         })()}
