@@ -1103,8 +1103,7 @@
 
             const CONCEPT_INFO = {
                 A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen' },
-                C: { number: 2, title: 'Inzageniveau', color: 'bg-blue-500', how: 'Admin kiest een gevoeligheidsniveau (1-4) per rol. Systeem suggereert op basis van taken.', what: 'Niveau 1 = alleen naam, niveau 4 = alles inclusief BSN/VOG.', key: 'Eenvoudige slider, systeem denkt mee' },
-                G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn. Per categorie veld-niveau drill-down beschikbaar (behalve Overheids-ID = all-or-nothing).', what: 'Categorieën worden afgeleid. Risico-balk toont gevoeligheidsniveau van actieve selectie. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid + veld-controle' },
+                G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'De data-inzage is een afleiding van wat in de rol is geconfigureerd. Op basis van gekozen taken, processen, dossierniveau en bestandstoegang berekent het systeem direct welke gegevens een gebruiker met deze rol kan zien.', what: 'Zowel admin als gebruiker krijgt de afgeleide inzage inzichtelijk gepresenteerd — admin kan vervolgens per veld nog handmatig aan/uit zetten. Risico-balk toont gevoeligheidsniveau, overrides worden gemarkeerd.', key: 'Afleiding uit rol-config + transparantie + veld-overrides' },
             };
             const [revealedFields, setRevealedFields] = useState({});
             const [editMode, setEditMode] = useState(false);
