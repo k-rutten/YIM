@@ -403,10 +403,17 @@
             { id: 'examenpoging_toevoegen', name: 'Voeg examenpoging toe' },
             { id: 'autorisaties_beoordelen', name: 'Autorisaties beoordelen' }
         ];
+        // CompanyAccessLevel uit YIM-productie (CompanyAccessLevel.cs + common-nl.json).
+        // Hierarchie: None ⊆ Own ⊆ Employer ⊆ EmployerAndSubContractors ⊆ All.
+        // Departments en ManagerAndEmployees zijn special cases naast deze keten.
+        // Label-format: huidig label + (Nieuw; voorgestelde herziene labels voor admin-duidelijkheid).
         const NIVEAU_OPTIONS = [
-            { id: 'bedrijf', name: 'Bedrijf' },
-            { id: 'contractor', name: 'Contractor' },
-            { id: 'medewerker', name: 'Medewerker' }
+            { id: 'own', name: 'Eigen (Nieuw; Alleen mezelf)' },
+            { id: 'employer', name: 'Werkgever (Nieuw; Alleen eigen werknemers)' },
+            { id: 'employerAndSubContractors', name: 'Structuur (Nieuw; Eigen werkgever + onderaannemers)' },
+            { id: 'departments', name: 'Afdelingen (Nieuw; Toegewezen afdelingen)' },
+            { id: 'managerAndEmployees', name: 'Manager/Medewerkers (Nieuw; Directe rapportages)' },
+            { id: 'all', name: 'Alles (Nieuw; Alle bedrijven in tenant)' }
         ];
         const DOSSIERNIVEAU = [
             { id: 'aanmeldingen', name: 'Aanmeldingen' },
@@ -551,7 +558,7 @@
             processen: PROCESSEN.map(p => p.id),
             contractor_types: CONTRACTOR_TYPES.map(p => p.id),
             taken: TAKEN.map(p => p.id),
-            niveau: 'medewerker',
+            niveau: 'all',
             dossierniveau: DOSSIERNIVEAU.map(p => p.id),
             bestand_toegangen: BESTAND_TOEGANGEN.map(p => p.id),
             locaties: LOCATIES.map(p => p.id),
@@ -567,7 +574,7 @@
             processen: ['gebruiker', 'medewerker', 'contractor'],
             contractor_types: ['medewerker_jinc'],
             taken: ['aanmelden', 'dossier_bekijken', 'dossier_beoordelen', 'dossier_bewerken', 'dossier_registreren', 'foto_upload', 'identificatie_aanvragen', 'identificatie_beoordelen', 'contract_beeindigen', 'elearning_uitnodiging'],
-            niveau: 'medewerker',
+            niveau: 'employer',
             dossierniveau: ['aanmeldingen', 'autorisaties', 'certificates', 'dossier_informatie', 'evenementen', 'gebruikers_bedrijf', 'geschiedenis', 'identificaties', 'personen_bedrijf'],
             bestand_toegangen: ['certificaten', 'persoonlijk'],
             locaties: LOCATIES.map(p => p.id),
@@ -583,7 +590,7 @@
             processen: ['contractor', 'bezoeker'],
             contractor_types: [],
             taken: ['aanmelden', 'dossier_bekijken', 'foto_upload', 'identificatie_aanvragen', 'identificatie_beoordelen', 'autorisaties_beoordelen'],
-            niveau: 'contractor',
+            niveau: 'employerAndSubContractors',
             dossierniveau: ['aanmeldingen', 'autorisaties', 'certificates', 'identificaties'],
             bestand_toegangen: ['certificaten'],
             locaties: ['botlek', 'bp_raffinaderij', 'rotterdam', 'schiphol'],
@@ -599,7 +606,7 @@
             processen: ['bezoeker'],
             contractor_types: [],
             taken: ['aanmelden'],
-            niveau: 'bedrijf',
+            niveau: 'own',
             dossierniveau: ['aanmeldingen'],
             bestand_toegangen: [],
             locaties: ['dh_nibc'],
@@ -1103,8 +1110,7 @@
 
             const CONCEPT_INFO = {
                 A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen' },
-                C: { number: 2, title: 'Inzageniveau', color: 'bg-blue-500', how: 'Admin kiest een gevoeligheidsniveau (1-4) per rol. Systeem suggereert op basis van taken.', what: 'Niveau 1 = alleen naam, niveau 4 = alles inclusief BSN/VOG.', key: 'Eenvoudige slider, systeem denkt mee' },
-                G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'Admin configureert alleen taken en rechten. Systeem berekent welke data zichtbaar moet zijn. Per categorie veld-niveau drill-down beschikbaar (behalve Overheids-ID = all-or-nothing).', what: 'Categorieën worden afgeleid. Risico-balk toont gevoeligheidsniveau van actieve selectie. Override mogelijk maar gemarkeerd.', key: 'Minimale config, maximale traceerbaarheid + veld-controle' },
+                G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'De data-inzage is een afleiding van wat in de rol is geconfigureerd. Op basis van gekozen taken, processen, dossierniveau en bestandstoegang berekent het systeem direct welke gegevens een gebruiker met deze rol kan zien.', what: 'Zowel admin als gebruiker krijgt de afgeleide inzage inzichtelijk gepresenteerd — admin kan vervolgens per veld nog handmatig aan/uit zetten. Risico-balk toont gevoeligheidsniveau, overrides worden gemarkeerd.', key: 'Afleiding uit rol-config + transparantie + veld-overrides' },
             };
             const [revealedFields, setRevealedFields] = useState({});
             const [editMode, setEditMode] = useState(false);
@@ -3139,6 +3145,23 @@
                                                 </div>
                                             </div>
                                             <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald. Klik op de checkbox om de hele categorie te overriden, of klap open voor veld-niveau controle.</p>
+                                            {/* Niveau (CompanyAccessLevel) — uitleg per gekozen bereik */}
+                                            {(() => {
+                                                const lvl = editForm.roleSettings?.niveau;
+                                                const lvlNote = {
+                                                    own: 'Niveau Eigen — deze rol ziet alleen de eigen gebruiker, geen andere personen.',
+                                                    employer: 'Niveau Werkgever — deze rol ziet personen in dienst bij de eigen werkgever. Onderaannemer-personen niet.',
+                                                    employerAndSubContractors: 'Niveau Structuur — deze rol ziet personen van de eigen werkgever én van onderaannemers van die werkgever.',
+                                                    departments: 'Niveau Afdelingen — deze rol ziet personen binnen toegewezen afdelingen.',
+                                                    managerAndEmployees: 'Niveau Manager/Medewerkers — deze rol ziet directe-rapportage relaties.',
+                                                    all: 'Niveau Alles — deze rol ziet alle personen binnen de tenant, ongeacht werkgever.'
+                                                }[lvl];
+                                                return lvlNote ? (
+                                                    <div className="mt-2 px-2 py-1.5 bg-yim-50 border border-yim-200 rounded text-[11px] text-yim-700">
+                                                        <span className="font-semibold">Bereik: </span>{lvlNote}
+                                                    </div>
+                                                ) : null;
+                                            })()}
                                         </div>
 
                                         {/* ===== RISICO-BALK (uitkomst-indicator) ===== */}
@@ -3365,6 +3388,62 @@
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {/* ===== 'In de praktijk' — concrete persoon-type ✓/✗ obv niveau-keuze ===== */}
+                                        {(() => {
+                                            const niveau = editForm.roleSettings?.niveau;
+                                            const finalCats2 = { ...derivedCats };
+                                            Object.entries(overrides).forEach(([k, v]) => { finalCats2[k] = v; });
+                                            const heeftBSN = !!finalCats2.government_id;
+                                            const scenarios = {
+                                                own: [
+                                                    { label: 'Mezelf', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Andere medewerkers eigen bedrijf', visible: false, detail: 'niveau te beperkt' },
+                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau te beperkt' }
+                                                ],
+                                                employer: [
+                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau Werkgever blokkeert' },
+                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
+                                                ],
+                                                employerAndSubContractors: [
+                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Onderaannemer-personen', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' },
+                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
+                                                ],
+                                                all: [
+                                                    { label: 'Alle personen in tenant', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' }
+                                                ],
+                                                departments: [
+                                                    { label: 'Personen in toegewezen afdelingen', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Andere personen', visible: false, detail: 'buiten afdelings-scope' }
+                                                ],
+                                                managerAndEmployees: [
+                                                    { label: 'Directe rapportages', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
+                                                    { label: 'Andere personen', visible: false, detail: 'buiten manager-relatie' }
+                                                ]
+                                            }[niveau] || [];
+                                            if (scenarios.length === 0) return null;
+                                            return (
+                                                <div className="border-t-2 border-yim-200 px-5 py-4 bg-gradient-to-br from-yim-50 to-white">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="text-sm font-bold text-yim-700 uppercase tracking-wider">In de praktijk</h4>
+                                                        <span className="text-[10px] text-yim-500 opacity-60 italic">Bij niveau-keuze</span>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        {scenarios.map((s, i) => (
+                                                            <div key={i} className="flex items-center gap-2 text-[12px]">
+                                                                <span className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-[10px] ${s.visible ? 'bg-green-100 text-green-700' : 'bg-yim-100 text-yim-400'}`}>
+                                                                    {s.visible ? '✓' : '✗'}
+                                                                </span>
+                                                                <span className="text-yim-700 font-medium">{s.label}</span>
+                                                                <span className="text-yim-500 opacity-70">— {s.detail}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
 
                                     </div>
                                     );
