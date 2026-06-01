@@ -1111,6 +1111,9 @@
             const CONCEPT_INFO = {
                 A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen' },
                 G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'De data-inzage is een afleiding van wat in de rol is geconfigureerd. Op basis van gekozen taken, processen, dossierniveau en bestandstoegang berekent het systeem direct welke gegevens een gebruiker met deze rol kan zien.', what: 'Zowel admin als gebruiker krijgt de afgeleide inzage inzichtelijk gepresenteerd — admin kan vervolgens per veld nog handmatig aan/uit zetten. Risico-balk toont gevoeligheidsniveau, overrides worden gemarkeerd.', key: 'Afleiding uit rol-config + transparantie + veld-overrides' },
+                T1: { number: 'T1', title: 'Permission Catalog (Toekomst)', color: 'bg-blue-500', how: 'Eén zoekbare lijst van atomic permissions met leesbare naam + technische key + categorie-filter. Geen wizard, geen tabs, geen gestapelde widgets — één gefocuste tabel die de admin kan scannen.', what: 'Inspiratie: Clerk. Vervangt de huidige 6-staps wizard (Procesrechten / Overzichten / Rapporten / Beheerrechten / Bedrijven) door één scan-vriendelijke tabel. Filters per groep (Dossier / Registratie / Identificatie / Bestand) maken het snel doorzoekbaar.', key: 'Searchable flat list ipv multi-step wizard' },
+                T2: { number: 'T2', title: 'Guided Wizard (Toekomst)', color: 'bg-purple-500', how: 'Een 4-stappen wizard: Naam & Omschrijving → Information Access (CompanyAccessLevel) → Set Permissions (taken + dossier-onderdelen) → Team members. Eén beslissing per scherm met expliciete uitleg waarom je deze stap doet.', what: 'Inspiratie: Remote. Scheidt "wie ziet wat" expliciet van "wat mag deze rol" — past 1-op-1 op YIM\'s model (CompanyAccessLevel + RegistrationActionTypes als aparte assen). Minder cognitieve last per stap, betere onboarding voor nieuwe admins.', key: 'Step-by-step met 1 beslissing per scherm' },
+                T3: { number: 'T3', title: 'Tiered Presets (Toekomst)', color: 'bg-emerald-500', how: 'Admin kiest een tier (Junior / Senior / Manager / Admin) en krijgt een baseline van permissies. Matrix-view toont rijen (capabilities) × kolommen (tiers) met checkmarks. Customizen vanaf preset.', what: 'Inspiratie: Fresha. Snelste setup voor 80% van de gevallen — meeste klanten hebben 3-5 standaard rollen die afwijkingen op een baseline zijn. Power-users kunnen customizen via override.', key: 'Pick a tier + customize from baseline' }
             };
             const [revealedFields, setRevealedFields] = useState({});
             const [editMode, setEditMode] = useState(false);
@@ -4103,9 +4106,223 @@
             );
         }
 
-        // Root Component with state management + concept toggle
+        // ============ FUTURE ROLES EXPLORER ============
+        // 3 Toekomst-varianten als verkenning naar verbeterde rol-management UX,
+        // gebaseerd op Mobbin-onderzoek (Clerk · Remote · Fresha).
+        function FutureRolesExplorer({ variant }) {
+            const variantInfo = {
+                T1: {
+                    title: 'T1 — Permission Catalog',
+                    inspiration: 'Clerk',
+                    inspirationUrl: 'https://mobbin.com/screens/fb14e44a-8042-4c98-a0dd-ae17cd9a4767',
+                    summary: 'Zoekbare, georganiseerde lijst van atomic permissions. Elke permissie heeft een leesbare naam + technische key. Filters per groep, scan-vriendelijk, geen wizard.',
+                    why: 'Lost het rommelig-probleem op door één gefocuste lijst i.p.v. 6 stappen met verschillende widget-typen.'
+                },
+                T2: {
+                    title: 'T2 — Guided Wizard',
+                    inspiration: 'Remote',
+                    inspirationUrl: 'https://mobbin.com/screens/58e94fda-6872-49fe-aab6-ae3bc695d550',
+                    summary: '4-stappen wizard: Naam & Omschrijving → Scope (CompanyAccessLevel) → Permissies (taken + dossier) → Toewijzen. Eén beslissing per scherm.',
+                    why: 'Scheidt "wie" expliciet van "wat" — past 1-op-1 op YIM\'s model. Minder cognitive load per stap.'
+                },
+                T3: {
+                    title: 'T3 — Tiered Presets',
+                    inspiration: 'Fresha',
+                    inspirationUrl: 'https://mobbin.com/screens/ec88a366-1d9e-437c-9d14-e3a6275010cd',
+                    summary: 'Kies een tier (Junior / Senior / Manager / Admin) — krijgt een baseline van permissies. Customizen vanaf preset via matrix-view (rijen = capabilities, kolommen = tiers).',
+                    why: 'Geschikt voor klanten met weinig rol-variatie. Snelste setup voor de 80% gevallen.'
+                }
+            }[variant] || {};
+
+            // ===== STUB-implementaties — proof-of-concept UI =====
+            const renderT1 = () => (
+                <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                    <div className="px-6 py-4 border-b border-yim-200 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-lg font-semibold text-yim-700">HR Manager · Permissions</h2>
+                            <p className="text-xs text-yim-500">Searchable permission catalog · {TAKEN.length} permissions</p>
+                        </div>
+                        <button className="text-sm bg-yim-orange text-white px-4 py-2 rounded font-medium">Save changes</button>
+                    </div>
+                    <div className="px-6 py-3 border-b border-yim-200 bg-yim-50/40 flex items-center gap-3">
+                        <div className="flex-1 relative">
+                            <svg className="w-4 h-4 absolute left-3 top-2.5 text-yim-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                            <input className="w-full pl-9 pr-3 py-2 text-sm border border-yim-300 rounded bg-white" placeholder="Zoek permission..." />
+                        </div>
+                        <span className="text-xs text-yim-500">Sort by:</span>
+                        <select className="text-xs border border-yim-300 rounded px-2 py-1.5">
+                            <option>Naam</option>
+                            <option>Key</option>
+                            <option>Categorie</option>
+                        </select>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-yim-50/60 text-[10px] uppercase tracking-wider text-yim-500">
+                                <tr><th className="text-left px-4 py-2 w-8"></th><th className="text-left px-4 py-2">Permission</th><th className="text-left px-4 py-2">Categorie</th><th className="text-left px-4 py-2 font-mono normal-case">Key</th></tr>
+                            </thead>
+                            <tbody>
+                                {TAKEN.slice(0, 10).map((t, i) => (
+                                    <tr key={t.id} className="border-t border-yim-100 hover:bg-yim-50/40">
+                                        <td className="px-4 py-2"><input type="checkbox" defaultChecked={i < 5} className="w-4 h-4 accent-yim-orange" /></td>
+                                        <td className="px-4 py-2 font-medium text-yim-700">{t.name}</td>
+                                        <td className="px-4 py-2 text-xs text-yim-500">{i % 3 === 0 ? 'Dossier' : i % 3 === 1 ? 'Registratie' : 'Identificatie'}</td>
+                                        <td className="px-4 py-2 text-xs font-mono text-yim-500">yim:{t.id}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="px-6 py-3 border-t border-yim-200 bg-yim-50/40 text-xs text-yim-500">
+                        Toon {TAKEN.length - 10} verborgen system permissions ·
+                        <a className="text-yim-orange ml-1 underline cursor-pointer">Show all</a>
+                    </div>
+                </div>
+            );
+
+            const renderT2 = () => {
+                const steps = [
+                    { n: 1, label: 'Naam & omschrijving', active: false, done: true },
+                    { n: 2, label: 'Information access', active: true, done: false },
+                    { n: 3, label: 'Set permissions', active: false, done: false },
+                    { n: 4, label: 'Team members', active: false, done: false }
+                ];
+                return (
+                    <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                        {/* Steps header */}
+                        <div className="px-6 py-3 border-b border-yim-200 bg-yim-50/40">
+                            <div className="flex items-center gap-2 text-xs">
+                                {steps.map((s, i) => (
+                                    <React.Fragment key={s.n}>
+                                        <span className={`flex items-center gap-1.5 ${s.active ? 'text-yim-700 font-bold' : s.done ? 'text-green-600' : 'text-yim-400'}`}>
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${s.active ? 'bg-yim-orange text-white' : s.done ? 'bg-green-100 text-green-700' : 'bg-yim-100 text-yim-400'}`}>
+                                                {s.done ? '✓' : s.n}
+                                            </span>
+                                            {s.n}. {s.label}
+                                        </span>
+                                        {i < steps.length - 1 && <span className="text-yim-300">›</span>}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Step content */}
+                        <div className="px-6 py-12">
+                            <div className="max-w-md mx-auto">
+                                <h2 className="text-2xl font-bold text-yim-700 mb-2">Select information access</h2>
+                                <p className="text-sm text-yim-500 mb-8">Selecteer welk niveau van toegang deze rol krijgt. Voor meer controle kan je in stap 3 specifieke permissies aanpassen.</p>
+                                <div className="bg-white border border-yim-200 rounded-lg p-5">
+                                    <label className="text-xs font-bold text-yim-700 uppercase tracking-wider">Information access level</label>
+                                    <select className="w-full mt-2 px-3 py-2.5 border border-yim-300 rounded bg-white text-sm">
+                                        {NIVEAU_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name.split(' (')[0]}</option>)}
+                                    </select>
+                                    <div className="mt-4 text-xs text-yim-500 bg-yim-50 border-l-2 border-yim-400 px-3 py-2 rounded">
+                                        <span className="font-semibold">Werkgever:</span> Personen in dienst bij eigen werkgever. Onderaannemer-personen niet.
+                                    </div>
+                                </div>
+                                <div className="flex justify-between mt-8">
+                                    <button className="px-4 py-2 text-sm text-yim-500 hover:text-yim-700">← Vorige</button>
+                                    <button className="px-6 py-2 text-sm font-medium bg-yim-orange text-white rounded">Volgende →</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderT3 = () => {
+                const tiers = ['Junior', 'Senior', 'Manager', 'Admin'];
+                const caps = [
+                    { name: 'Bekijk eigen dossier', levels: [true, true, true, true] },
+                    { name: 'Bekijk team-dossiers', levels: [false, true, true, true] },
+                    { name: 'Bewerk eigen dossier', levels: [false, true, true, true] },
+                    { name: 'Bewerk team-dossiers', levels: [false, false, true, true] },
+                    { name: 'Beoordeel identificatie', levels: [false, false, true, true] },
+                    { name: 'Zie BSN/VOG', levels: [false, false, true, true] },
+                    { name: 'Wijzig BSN/VOG', levels: [false, false, false, true] },
+                    { name: 'Accrediteer bedrijven', levels: [false, false, false, true] }
+                ];
+                return (
+                    <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-yim-200">
+                            <h2 className="text-lg font-semibold text-yim-700">Kies een rol-tier</h2>
+                            <p className="text-xs text-yim-500 mt-0.5">Start met een baseline en customize indien nodig. Alle beheerders hebben volledige toegang.</p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-yim-200">
+                                        <th className="text-left px-4 py-3 text-xs uppercase tracking-wider text-yim-500">Capability</th>
+                                        {tiers.map(t => (
+                                            <th key={t} className="text-center px-4 py-3 text-xs uppercase tracking-wider text-yim-700">
+                                                <button className={`w-full py-2 rounded font-bold ${t === 'Senior' ? 'bg-yim-orange text-white' : 'text-yim-500 hover:bg-yim-50'}`}>
+                                                    {t}
+                                                </button>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {caps.map((cap, i) => (
+                                        <tr key={i} className="border-b border-yim-100 hover:bg-yim-50/40">
+                                            <td className="px-4 py-2.5 text-yim-700">{cap.name}</td>
+                                            {cap.levels.map((on, idx) => (
+                                                <td key={idx} className="text-center px-4 py-2.5">
+                                                    <input type="checkbox" checked={on} readOnly className={`w-4 h-4 ${idx === 1 ? 'accent-yim-orange' : 'opacity-50 accent-yim-300'}`} />
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="px-6 py-3 border-t border-yim-200 bg-yim-50/40 text-xs text-yim-500 flex items-center justify-between">
+                            <span>Senior-tier geselecteerd · 5 capabilities standaard aan</span>
+                            <button className="text-yim-orange font-medium underline cursor-pointer">Customize vanaf preset →</button>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="bg-yim-50/30 min-h-screen">
+                    <div className="max-w-6xl mx-auto px-6 py-8">
+                        {/* Intro */}
+                        <div className="mb-6 bg-white border border-yim-200 rounded-lg px-5 py-4">
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[10px] font-bold text-yim-orange uppercase tracking-wider">Toekomst — verkenning</span>
+                                        <span className="text-[10px] text-yim-400">·</span>
+                                        <span className="text-[10px] text-yim-500">Inspiratie: <a href={variantInfo.inspirationUrl} target="_blank" className="underline text-yim-orange">{variantInfo.inspiration} via Mobbin</a></span>
+                                    </div>
+                                    <h1 className="text-2xl font-bold text-yim-700">{variantInfo.title}</h1>
+                                    <p className="text-sm text-yim-600 opacity-80 mt-1">{variantInfo.summary}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-yim-700 bg-yim-50 border-l-2 border-yim-400 px-3 py-2 rounded mt-3">
+                                <span className="font-semibold">Waarom dit beter is dan huidig: </span>{variantInfo.why}
+                            </p>
+                        </div>
+
+                        {/* Stub UI */}
+                        {variant === 'T1' && renderT1()}
+                        {variant === 'T2' && renderT2()}
+                        {variant === 'T3' && renderT3()}
+
+                        {/* Disclaimer */}
+                        <p className="text-[11px] text-yim-400 italic text-center mt-6">
+                            Dit is een verkennende stub-UI gebaseerd op Mobbin-research · Geen functionele state, geen wiring naar bestaande rol-engine.
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Root Component with state management + concept toggle + product mode (Huidig / Toekomst)
         function Root() {
+            const [productMode, setProductMode] = useState('huidig'); // 'huidig' = bestaand prototype · 'toekomst' = nieuwe concepten
             const [concept, setConcept] = useState('A');
+            const [futureConcept, setFutureConcept] = useState('T1'); // T1 = catalog · T2 = wizard · T3 = tiered
             const [rolesA, setRolesA] = useState(initialRolesA);
             const [rolesC, setRolesC] = useState(initialRolesC);
             const [rolesG, setRolesG] = useState(initialRolesG);
@@ -4119,27 +4336,70 @@
                 <div>
                     {/* Fixture Toggle */}
                     <div className="bg-yim-950 text-white">
-                        <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Concept</span>
-                                <div className="flex bg-white/10 rounded-lg p-0.5">
-                                    <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        1: Profielen
-                                    </button>
-                                    <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        3: Taakafleiding
-                                    </button>
+                        <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex items-center gap-4 flex-wrap">
+                                {/* Product mode segmented button */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Product</span>
+                                    <div className="flex bg-white/10 rounded-lg p-0.5">
+                                        <button onClick={() => setProductMode('huidig')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${productMode === 'huidig' ? 'bg-white text-yim-700 shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                            Huidig
+                                        </button>
+                                        <button onClick={() => setProductMode('toekomst')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${productMode === 'toekomst' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                            Toekomst
+                                        </button>
+                                    </div>
                                 </div>
+                                {/* Concept switcher (alleen relevant in Huidig of Toekomst eigen variants) */}
+                                {productMode === 'huidig' ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Concept</span>
+                                        <div className="flex bg-white/10 rounded-lg p-0.5">
+                                            <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                1: Profielen
+                                            </button>
+                                            <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                3: Taakafleiding
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Variant</span>
+                                        <div className="flex bg-white/10 rounded-lg p-0.5">
+                                            <button onClick={() => setFutureConcept('T1')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${futureConcept === 'T1' ? 'bg-blue-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                T1: Catalog
+                                            </button>
+                                            <button onClick={() => setFutureConcept('T2')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${futureConcept === 'T2' ? 'bg-purple-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                T2: Wizard
+                                            </button>
+                                            <button onClick={() => setFutureConcept('T3')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${futureConcept === 'T3' ? 'bg-emerald-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                T3: Tiers
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <p className="text-xs text-white/40">
-                                {concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
-                                 : concept === 'C' ? 'Inzageniveau met suggestie · Categorieën volgen uit rolinstellingen'
-                                 : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
-                                 : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'}
+                                {productMode === 'huidig' ? (
+                                    concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
+                                     : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
+                                     : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'
+                                ) : (
+                                    futureConcept === 'T1' ? 'Searchable permission catalog (Clerk-style) — zoekbaar, georganiseerd, key naast naam'
+                                     : futureConcept === 'T2' ? 'Guided wizard (Remote-style) — 4 stappen: Naam → Scope → Permissies → Toewijzen'
+                                     : 'Tiered presets (Fresha-style) — kies een niveau, customizen vanaf baseline'
+                                )}
                             </p>
                         </div>
                     </div>
-                    <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} setConcept={setConcept} />
+                    {productMode === 'huidig' ? (
+                        <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} setConcept={setConcept} />
+                    ) : (
+                        <FutureRolesExplorer variant={futureConcept} />
+                    )}
                 </div>
             );
         }
