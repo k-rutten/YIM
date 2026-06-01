@@ -403,10 +403,16 @@
             { id: 'examenpoging_toevoegen', name: 'Voeg examenpoging toe' },
             { id: 'autorisaties_beoordelen', name: 'Autorisaties beoordelen' }
         ];
+        // CompanyAccessLevel uit YIM-productie (CompanyAccessLevel.cs).
+        // Hierarchie: None ⊆ Own ⊆ Employer ⊆ EmployerAndSubContractors ⊆ All.
+        // Departments en ManagerAndEmployees zijn special cases naast deze keten.
         const NIVEAU_OPTIONS = [
-            { id: 'bedrijf', name: 'Bedrijf' },
-            { id: 'contractor', name: 'Contractor' },
-            { id: 'medewerker', name: 'Medewerker' }
+            { id: 'own', name: 'Eigen' },
+            { id: 'employer', name: 'Werkgever' },
+            { id: 'departments', name: 'Afdelingen' },
+            { id: 'employerAndSubContractors', name: 'Werkgever + onderaannemers' },
+            { id: 'all', name: 'Structuur' },
+            { id: 'managerAndEmployees', name: 'Manager + medewerkers' }
         ];
         const DOSSIERNIVEAU = [
             { id: 'aanmeldingen', name: 'Aanmeldingen' },
@@ -551,7 +557,7 @@
             processen: PROCESSEN.map(p => p.id),
             contractor_types: CONTRACTOR_TYPES.map(p => p.id),
             taken: TAKEN.map(p => p.id),
-            niveau: 'medewerker',
+            niveau: 'all',
             dossierniveau: DOSSIERNIVEAU.map(p => p.id),
             bestand_toegangen: BESTAND_TOEGANGEN.map(p => p.id),
             locaties: LOCATIES.map(p => p.id),
@@ -567,7 +573,7 @@
             processen: ['gebruiker', 'medewerker', 'contractor'],
             contractor_types: ['medewerker_jinc'],
             taken: ['aanmelden', 'dossier_bekijken', 'dossier_beoordelen', 'dossier_bewerken', 'dossier_registreren', 'foto_upload', 'identificatie_aanvragen', 'identificatie_beoordelen', 'contract_beeindigen', 'elearning_uitnodiging'],
-            niveau: 'medewerker',
+            niveau: 'employer',
             dossierniveau: ['aanmeldingen', 'autorisaties', 'certificates', 'dossier_informatie', 'evenementen', 'gebruikers_bedrijf', 'geschiedenis', 'identificaties', 'personen_bedrijf'],
             bestand_toegangen: ['certificaten', 'persoonlijk'],
             locaties: LOCATIES.map(p => p.id),
@@ -583,7 +589,7 @@
             processen: ['contractor', 'bezoeker'],
             contractor_types: [],
             taken: ['aanmelden', 'dossier_bekijken', 'foto_upload', 'identificatie_aanvragen', 'identificatie_beoordelen', 'autorisaties_beoordelen'],
-            niveau: 'contractor',
+            niveau: 'employerAndSubContractors',
             dossierniveau: ['aanmeldingen', 'autorisaties', 'certificates', 'identificaties'],
             bestand_toegangen: ['certificaten'],
             locaties: ['botlek', 'bp_raffinaderij', 'rotterdam', 'schiphol'],
@@ -599,7 +605,7 @@
             processen: ['bezoeker'],
             contractor_types: [],
             taken: ['aanmelden'],
-            niveau: 'bedrijf',
+            niveau: 'own',
             dossierniveau: ['aanmeldingen'],
             bestand_toegangen: [],
             locaties: ['dh_nibc'],
@@ -3138,6 +3144,23 @@
                                                 </div>
                                             </div>
                                             <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald. Klik op de checkbox om de hele categorie te overriden, of klap open voor veld-niveau controle.</p>
+                                            {/* Niveau (CompanyAccessLevel) — uitleg per gekozen bereik */}
+                                            {(() => {
+                                                const lvl = editForm.roleSettings?.niveau;
+                                                const lvlNote = {
+                                                    own: 'Niveau Eigen — deze rol ziet alleen de eigen gebruiker, geen andere personen.',
+                                                    employer: 'Niveau Werkgever — deze rol ziet personen in dienst bij de eigen werkgever. Onderaannemer-personen niet.',
+                                                    departments: 'Niveau Afdelingen — deze rol ziet personen binnen toegewezen afdelingen.',
+                                                    employerAndSubContractors: 'Niveau Werkgever + onderaannemers — deze rol ziet ook personen van onderaannemers van de eigen werkgever.',
+                                                    all: 'Niveau Structuur — deze rol ziet personen binnen de volledige tenant-structuur.',
+                                                    managerAndEmployees: 'Niveau Manager + medewerkers — deze rol ziet directe-rapportage relaties.'
+                                                }[lvl];
+                                                return lvlNote ? (
+                                                    <div className="mt-2 px-2 py-1.5 bg-yim-50 border border-yim-200 rounded text-[11px] text-yim-700">
+                                                        <span className="font-semibold">Bereik: </span>{lvlNote}
+                                                    </div>
+                                                ) : null;
+                                            })()}
                                         </div>
 
                                         {/* ===== RISICO-BALK (uitkomst-indicator) ===== */}
