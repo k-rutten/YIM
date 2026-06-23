@@ -1172,6 +1172,10 @@
             const CONCEPT_INFO = {
                 A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen' },
                 G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'De data-inzage is een afleiding van wat in de rol is geconfigureerd. Op basis van gekozen taken, processen, dossierniveau en bestandstoegang berekent het systeem direct welke gegevens een gebruiker met deze rol kan zien.', what: 'Zowel admin als gebruiker krijgt de afgeleide inzage inzichtelijk gepresenteerd — admin kan vervolgens per veld nog handmatig aan/uit zetten. Risico-balk toont gevoeligheidsniveau, overrides worden gemarkeerd.', key: 'Afleiding uit rol-config + transparantie + veld-overrides' },
+                T1: { number: 'T1', title: 'Categorized Workspace (Toekomst)', color: 'bg-blue-500', how: 'Eén-rol-bewerken view met links nav (7 YIM-secties: Informatie / Procesrechten / Overzichten / Rapporten / Beheerrechten / Delegatie / Bedrijven) en rechts een actie-grid met View / Edit / Scope per item. Alle dimensies blijven beschikbaar maar zijn gecategoriseerd.', what: 'Inspiratie: Zoom Watcher role. Acknowledgt YIM\'s multi-dimensionaliteit — per actie kan View, Edit en Scope onafhankelijk worden ingesteld. Vervangt 6-staps wizard door één gefocuste workspace.', key: 'Categorische links-nav + per-actie View/Edit/Scope grid' },
+                T2: { number: 'T2', title: 'Comparison Matrix (Toekomst)', color: 'bg-purple-500', how: 'Multi-rol overzicht: rijen = capabilities gegroepeerd per YIM-sectie, kolommen = alle rollen tegelijk. Cellen tonen ✓ Edit / 👁 View only / ⊘ No access. Klik om toe te wijzen, hover voor uitleg.', what: 'Inspiratie: Vanta Permission details. Beste voor admins die meerdere rollen tegelijk beheren — zie direct waar rollen consistent zijn vs afwijken. Bulk-edit via kolom-klik.', key: 'Multi-rol vergelijking + bulk-edit in één scherm' },
+                T3: { number: 'T3', title: 'Preset + Progressive Accordion (Toekomst)', color: 'bg-emerald-500', how: 'Kies baseline-preset (Security Guard / HR Coördinator / HR Senior / Operations / Tenant Admin) — alle 7 secties worden ingevuld. Customize via accordion: elke sectie expandeert om afwijking van baseline te zien + bewerken. Afwijkingen krijgen een "Afwijking" badge.', what: 'Inspiratie: Deel Organization roles. Werkbaar voor 80% klanten met 3-5 standaard rollen. Power-users behouden volledige controle via accordion. Scope-grenzen blijven expliciet.', key: 'Preset baseline + accordion-customization per sectie' },
+                T4: { number: 'T4', title: 'User-centric Effective View (Toekomst)', color: 'bg-rose-500', how: 'Per gebruiker een detail-view met (a) toegewezen rollen + granted-by/when/expiry metadata, (b) consolidated "Effective Permissions" tab die de bitwise UNION over alle stacked rollen toont met source-attributie ("via HR Manager"), (c) conflict-detectie ("permissie X komt uit 2 rollen — beperk er één").', what: 'Inspiratie: Snowflake (granted roles + metadata) + Zendesk (per-scope role) + Squarespace (consolidated effective). Lost YIM\'s pure-union stacking-probleem op: admins kunnen nu zien WAARUIT effective permissions komen ipv te raden welke rol-combinatie het doet.', key: 'User-perspectief op stacked rollen + source-attributie + conflict-detectie' }
             };
             const [revealedFields, setRevealedFields] = useState({});
             const [editMode, setEditMode] = useState(false);
@@ -4231,9 +4235,473 @@
             );
         }
 
-        // Root Component with state management + concept toggle
+        // ============ FUTURE ROLES EXPLORER ============
+        // 3 Toekomst-varianten als verkenning naar verbeterde rol-management UX,
+        // gebaseerd op Mobbin-onderzoek (Clerk · Remote · Fresha).
+        function FutureRolesExplorer({ variant }) {
+            const variantInfo = {
+                T1: {
+                    title: 'T1 — Categorized Workspace',
+                    inspiration: 'Zoom (Watcher role)',
+                    inspirationUrl: 'https://mobbin.com/screens/1f9ceafa-a636-4edc-9c20-c45a588eca80',
+                    summary: 'Eén-rol-bewerken view: links nav met de 7 YIM-secties (Informatie / Procesrechten / Overzichten / Rapporten / Beheerrechten / Delegatie / Bedrijven), rechts per sectie een actie-grid met View / Edit / Scope per item. Geen wizard — alles direct beschikbaar maar gegroepeerd.',
+                    why: 'Acknowledgt YIM\'s multi-dimensionaliteit (per item kan View, Edit én Scope verschillen). Vervangt 6-staps wizard door één focused workspace met categorische links-nav.'
+                },
+                T2: {
+                    title: 'T2 — Comparison Matrix',
+                    inspiration: 'Vanta (Permission details)',
+                    inspirationUrl: 'https://mobbin.com/screens/6dd83a18-ede6-44a5-adc5-2ebff239c7de',
+                    summary: 'Multi-rol overzicht: rijen = capabilities gegroepeerd per YIM-sectie, kolommen = alle rollen. Cellen tonen ✓ Edit · 👁 View only · ⊘ No access. Klik om te toggelen, hover voor uitleg. Vergelijken + bulk-edit in één scherm.',
+                    why: 'Beste voor admins die meerdere rollen tegelijk beheren — zie direct waar rollen consistent zijn vs afwijken. Sneller dan rol-voor-rol bewerken.'
+                },
+                T3: {
+                    title: 'T3 — Preset + Progressive Accordion',
+                    inspiration: 'Deel (Organization roles)',
+                    inspirationUrl: 'https://mobbin.com/screens/36709888-968f-4f2b-b5d4-bdd11efcf476',
+                    summary: 'Kies baseline-preset (Security Guard / HR Coordinator / HR Senior / Operations Admin / Tenant Admin) — alle 7 secties worden ingevuld. Customize via accordion: elke sectie expandeert om afwijking van baseline te tonen + bewerken. Override-badges per sectie.',
+                    why: 'Werkbaar voor 80% van klanten met 3-5 standaard rollen. Power-users behouden volledige controle via accordion. Scope-grenzen (Bedrijven, Locaties) blijven expliciet zichtbaar.'
+                },
+                T4: {
+                    title: 'T4 — User-centric Effective View',
+                    inspiration: 'Snowflake (granted roles) + Zendesk (per-scope role) + Squarespace (consolidated effective permissions)',
+                    inspirationUrl: 'https://mobbin.com/screens/5e1dca3a-3222-421f-bc8b-b92575cbae58',
+                    summary: 'Per gebruiker een detail-view met (a) alle toegewezen rollen + metadata (granted by / when / reason / expiry), (b) consolidated Effective Permissions tab die de UNION over alle stacked rollen toont, (c) per-rol scope-binding zoals Zendesk per-product Admin. Lost het "wat kan deze user nu echt" probleem op dat YIM\'s pure-union stacking veroorzaakt.',
+                    why: 'YIM stapelt rollen via pure bitwise UNION — admins kunnen niet zien WAARUIT een effective permission komt. Deze view maakt dat traceerbaar. Plus: per-rol scope-binding maakt de UNION expliciet inperkbaar (HR-rol "alleen voor bedrijven A en B").'
+                }
+            }[variant] || {};
+
+            // ===== STUB-implementaties — proof-of-concept UI =====
+            // T1: Categorized workspace — links nav 7 secties, rechts grid met View/Edit/Scope per item
+            const renderT1 = () => {
+                const SECTIONS = [
+                    { id: 'info', name: 'Informatie', count: 2, active: false },
+                    { id: 'process', name: 'Procesrechten', count: 9, active: true },
+                    { id: 'views', name: 'Overzichten', count: 7, active: false },
+                    { id: 'reports', name: 'Rapporten', count: 4, active: false },
+                    { id: 'admin', name: 'Beheerrechten', count: 6, active: false },
+                    { id: 'delegation', name: 'Delegatie', count: 1, active: false },
+                    { id: 'companies', name: 'Bedrijven', count: 8, active: false }
+                ];
+                const procRows = [
+                    { name: 'Aanmelden', view: true, edit: true, scope: 'Werkgever' },
+                    { name: 'Dossier bekijken', view: true, edit: false, scope: 'Werkgever' },
+                    { name: 'Dossier beoordelen', view: true, edit: true, scope: 'Werkgever' },
+                    { name: 'Dossier bewerken', view: true, edit: true, scope: 'Werkgever' },
+                    { name: 'Identificatie aanvragen', view: true, edit: true, scope: 'Werkgever' },
+                    { name: 'Identificatie beoordelen', view: true, edit: true, scope: 'Werkgever + onderaannemers' },
+                    { name: 'Autorisaties bewerken', view: false, edit: false, scope: '—' },
+                    { name: 'Contract beëindigen', view: true, edit: false, scope: 'Werkgever' },
+                    { name: 'Foto upload', view: true, edit: true, scope: 'Werkgever' }
+                ];
+                return (
+                    <div className="bg-white border border-yim-200 rounded-xl overflow-hidden flex" style={{ minHeight: '560px' }}>
+                        {/* Left nav */}
+                        <div className="w-56 border-r border-yim-200 bg-yim-50/40 flex-shrink-0">
+                            <div className="px-4 py-4 border-b border-yim-200">
+                                <p className="text-[10px] uppercase tracking-wider text-yim-500 font-semibold">Rol bewerken</p>
+                                <h2 className="text-base font-bold text-yim-700 mt-0.5">HR Manager</h2>
+                                <p className="text-xs text-yim-500 mt-0.5">Persoons- en arbeidsgegevens</p>
+                            </div>
+                            <nav className="py-2">
+                                {SECTIONS.map(s => (
+                                    <button key={s.id}
+                                        className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${s.active ? 'bg-yim-orange/10 border-r-2 border-yim-orange text-yim-700 font-semibold' : 'text-yim-600 hover:bg-yim-50'}`}>
+                                        <span>{s.name}</span>
+                                        <span className="text-[10px] text-yim-400 bg-yim-100 px-1.5 py-0.5 rounded">{s.count}</span>
+                                    </button>
+                                ))}
+                            </nav>
+                        </div>
+                        {/* Right pane */}
+                        <div className="flex-1 flex flex-col">
+                            <div className="px-6 py-4 border-b border-yim-200">
+                                <h3 className="text-lg font-bold text-yim-700">Procesrechten</h3>
+                                <p className="text-xs text-yim-500 mt-0.5">Per actie kan je View, Edit en Scope apart instellen. Inactief = rol mag deze actie niet uitvoeren.</p>
+                            </div>
+                            <div className="px-6 py-3 border-b border-yim-200 bg-yim-50/40 flex items-center gap-3">
+                                <div className="flex-1 relative">
+                                    <svg className="w-4 h-4 absolute left-3 top-2.5 text-yim-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                                    <input className="w-full pl-9 pr-3 py-1.5 text-sm border border-yim-300 rounded bg-white" placeholder="Zoek actie..." />
+                                </div>
+                                <span className="text-xs text-yim-500">Filter:</span>
+                                <select className="text-xs border border-yim-300 rounded px-2 py-1.5"><option>Alle</option><option>Actief</option><option>Inactief</option></select>
+                            </div>
+                            <div className="flex-1 overflow-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-yim-50/60 text-[10px] uppercase tracking-wider text-yim-500 sticky top-0">
+                                        <tr>
+                                            <th className="text-left px-4 py-2">Actie</th>
+                                            <th className="text-center px-3 py-2 w-16">View</th>
+                                            <th className="text-center px-3 py-2 w-16">Edit</th>
+                                            <th className="text-left px-3 py-2">Scope (CompanyAccessLevel)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {procRows.map((r, i) => (
+                                            <tr key={i} className="border-t border-yim-100 hover:bg-yim-50/40">
+                                                <td className="px-4 py-2.5 text-yim-700 font-medium">{r.name}</td>
+                                                <td className="text-center px-3 py-2.5"><input type="checkbox" checked={r.view} readOnly className="w-4 h-4 accent-yim-orange" /></td>
+                                                <td className="text-center px-3 py-2.5"><input type="checkbox" checked={r.edit} readOnly className="w-4 h-4 accent-yim-orange" /></td>
+                                                <td className="px-3 py-2.5">
+                                                    <select className="text-xs border border-yim-300 rounded px-2 py-1 bg-white" disabled={r.scope === '—'}>
+                                                        <option>{r.scope}</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {/* Effective Permissions Preview — leverages YIM's multi-dimensional model */}
+                            <div className="px-6 py-3 border-t border-yim-200 bg-blue-50/40">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <p className="text-[10px] uppercase tracking-wider text-blue-700 font-semibold mb-1.5">Effective preview (live)</p>
+                                        <p className="text-xs text-yim-700">
+                                            Met deze configuratie kan de rol bij ca. <span className="font-semibold">142 personen</span> · ziet <span className="font-semibold">7 dossier-tabs</span> · mag <span className="font-semibold">7 acties</span> uitvoeren.
+                                        </p>
+                                        <p className="text-[11px] text-yim-500 mt-1">
+                                            <span className="text-amber-600 font-semibold">⚠ Risico:</span> identificatie_beoordelen + government_id-inzage + Werkgever+onderaannemers-scope = BSN-inzage onderaannemer-personen
+                                        </p>
+                                    </div>
+                                    <button className="text-xs text-blue-700 underline font-medium whitespace-nowrap">Test als gebruiker →</button>
+                                </div>
+                            </div>
+                            <div className="px-6 py-3 border-t border-yim-200 bg-yim-50/40 flex items-center justify-between">
+                                <span className="text-xs text-yim-500">7 actief · 1 deels actief · 1 inactief</span>
+                                <button className="text-sm bg-yim-orange text-white px-4 py-1.5 rounded font-medium">Opslaan met reden…</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // T2: Comparison Matrix — rijen = capabilities gegroepeerd per sectie, kolommen = rollen
+            const renderT2 = () => {
+                const ROLES = ['Security Guard', 'HR Coördinator', 'HR Manager', 'Operations', 'Tenant Admin'];
+                const SCOPE_LBL = { full: '✓ Edit', view: '👁 View', no: '⊘ Geen' };
+                const SCOPE_COLOR = { full: 'text-green-600 font-semibold', view: 'text-yim-500', no: 'text-yim-300' };
+                const GROUPS = [
+                    { name: 'Procesrechten — Dossier', rows: [
+                        { cap: 'Dossier bekijken', vals: ['view','full','full','full','full'] },
+                        { cap: 'Dossier beoordelen', vals: ['no','view','full','full','full'] },
+                        { cap: 'Dossier bewerken', vals: ['no','view','full','full','full'] },
+                        { cap: 'Dossier registreren', vals: ['no','full','full','full','full'] }
+                    ]},
+                    { name: 'Procesrechten — Identificatie', rows: [
+                        { cap: 'Identificatie aanvragen', vals: ['no','no','full','full','full'] },
+                        { cap: 'Identificatie beoordelen', vals: ['no','no','full','full','full'] },
+                        { cap: 'BSN inzage', vals: ['no','no','view','full','full'] }
+                    ]},
+                    { name: 'Overzichten', rows: [
+                        { cap: 'Aanmeldingen', vals: ['view','full','full','full','full'] },
+                        { cap: 'Bedrijven', vals: ['no','view','full','full','full'] },
+                        { cap: 'Credentials', vals: ['view','view','full','full','full'] }
+                    ]},
+                    { name: 'Beheerrechten', rows: [
+                        { cap: 'Gebruikersrollen beheren', vals: ['no','no','no','view','full'] },
+                        { cap: 'Bedrijven accrediteren', vals: ['no','no','no','full','full'] },
+                        { cap: 'Bezoek-locaties', vals: ['full','no','no','full','full'] }
+                    ]},
+                    { name: 'Scope (CompanyAccessLevel)', rows: [
+                        { cap: 'Bereik', vals: ['no','view','view','full','full'], textVals: ['Eigen','Werkgever','Werkgever','Structuur','Alles'] }
+                    ]}
+                ];
+                return (
+                    <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-yim-200 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-bold text-yim-700">Roles & permissions overview</h2>
+                                <p className="text-xs text-yim-500 mt-0.5">Vergelijk en beheer alle rollen tegelijk. Klik op een cel om toe te wijzen.</p>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                                <button className="px-3 py-1.5 border border-yim-300 rounded text-yim-600">+ Nieuwe rol</button>
+                                <button className="px-3 py-1.5 bg-yim-orange text-white rounded font-medium">Save changes</button>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-yim-50/60 sticky top-0">
+                                    <tr>
+                                        <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-yim-500 w-72">Capability</th>
+                                        {ROLES.map(r => (
+                                            <th key={r} className="text-center px-3 py-3 text-[11px] text-yim-700 font-bold">{r}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {GROUPS.map((g, gi) => (
+                                        <React.Fragment key={gi}>
+                                            <tr className="bg-yim-50/40">
+                                                <td colSpan={ROLES.length + 1} className="px-4 py-1.5 text-[10px] uppercase tracking-wider text-yim-500 font-semibold">{g.name}</td>
+                                            </tr>
+                                            {g.rows.map((row, ri) => (
+                                                <tr key={`${gi}-${ri}`} className="border-t border-yim-100 hover:bg-yim-50/30">
+                                                    <td className="px-4 py-2 text-yim-700">{row.cap}</td>
+                                                    {row.vals.map((v, vi) => (
+                                                        <td key={vi} className={`text-center px-3 py-2 text-xs ${SCOPE_COLOR[v]}`}>
+                                                            {row.textVals ? row.textVals[vi] : SCOPE_LBL[v]}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="px-6 py-3 border-t border-yim-200 bg-yim-50/40 text-xs text-yim-500 flex items-center justify-between">
+                            <span>5 rollen · 15 capabilities · 75 cellen</span>
+                            <span className="text-yim-400">Legenda: ⊘ Geen toegang · 👁 View · ✓ Edit</span>
+                        </div>
+                    </div>
+                );
+            };
+
+            // T3: Preset + Progressive Accordion — kies baseline, customize via accordion per sectie
+            const renderT3 = () => {
+                const PRESETS = [
+                    { id: 'sg', name: 'Security Guard', desc: 'Toegangscontrole + ID verificatie' },
+                    { id: 'hrc', name: 'HR Coördinator', desc: 'Aanmelden + basis-dossier' },
+                    { id: 'hrs', name: 'HR Senior', desc: 'Volledige HR + identificatie', active: true },
+                    { id: 'ops', name: 'Operations', desc: 'HR + accreditatie + rapporten' },
+                    { id: 'admin', name: 'Tenant Admin', desc: 'Volledige toegang + beheerrechten' }
+                ];
+                const SECTIONS = [
+                    { id: 'info', name: 'Informatie', summary: '"HR Senior" · 2 velden ingevuld', open: false, modified: false },
+                    { id: 'process', name: 'Procesrechten', summary: '7 acties · Werkgever-scope · 1 contractor-type', open: true, modified: true },
+                    { id: 'views', name: 'Overzichten', summary: '5 overzichten zichtbaar (standaard)', open: false, modified: false },
+                    { id: 'reports', name: 'Rapporten', summary: '2 actieve rapporten', open: false, modified: false },
+                    { id: 'admin', name: 'Beheerrechten', summary: '4 beheerrechten · 2 gemarkeerd als afwijking', open: false, modified: true },
+                    { id: 'delegation', name: 'Delegatie', summary: 'Delegatie: Aan', open: false, modified: false },
+                    { id: 'companies', name: 'Bedrijven', summary: 'Accrediteer alle: Nee · 3 bedrijven geselecteerd', open: false, modified: true }
+                ];
+                return (
+                    <div className="space-y-4">
+                        {/* Preset picker */}
+                        <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                            <div className="px-6 py-4 border-b border-yim-200">
+                                <h2 className="text-lg font-bold text-yim-700">Kies een baseline-preset</h2>
+                                <p className="text-xs text-yim-500 mt-0.5">Elke preset vult alle 7 secties in. Customize daarna via de accordion.</p>
+                            </div>
+                            <div className="px-6 py-4 grid grid-cols-5 gap-3">
+                                {PRESETS.map(p => (
+                                    <button key={p.id}
+                                        className={`text-left rounded border-2 p-3 transition-all ${p.active ? 'border-yim-orange bg-yim-orange/5 shadow-sm' : 'border-yim-200 hover:border-yim-400'}`}>
+                                        <p className={`text-sm font-bold ${p.active ? 'text-yim-700' : 'text-yim-600'}`}>{p.name}</p>
+                                        <p className="text-[11px] text-yim-500 mt-1 leading-tight">{p.desc}</p>
+                                        {p.active && <p className="text-[10px] text-yim-orange font-semibold mt-2 uppercase tracking-wider">Geselecteerd</p>}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Accordion */}
+                        <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                            <div className="px-6 py-3 border-b border-yim-200 bg-yim-50/40 flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-yim-700">Customize "HR Senior"</h3>
+                                <span className="text-xs text-yim-500">3 van 7 secties afwijkend van baseline</span>
+                            </div>
+                            {SECTIONS.map(s => (
+                                <div key={s.id} className="border-b border-yim-100 last:border-0">
+                                    <button className={`w-full px-6 py-3 text-left flex items-center justify-between hover:bg-yim-50/40 ${s.open ? 'bg-yim-50/30' : ''}`}>
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <svg className={`w-4 h-4 text-yim-400 transition-transform ${s.open ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-semibold text-yim-700">{s.name}</span>
+                                                    {s.modified && <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded uppercase tracking-wider">Afwijking</span>}
+                                                </div>
+                                                <p className="text-xs text-yim-500 mt-0.5">{s.summary}</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    {s.open && (
+                                        <div className="px-6 py-4 bg-white border-t border-yim-100">
+                                            <div className="bg-yim-50/40 border border-yim-200 rounded p-4 mb-3">
+                                                <p className="text-xs text-yim-600 mb-3"><span className="font-semibold">Basis-preset:</span> 5 standaard acties · Werkgever-scope · Alle contractor-types</p>
+                                                <p className="text-xs text-yim-600"><span className="font-semibold">Jouw aanpassingen:</span> +2 extra acties (identificatie_beoordelen, dossier_bewerken) · Beperkt tot Medewerker JINC</p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="border border-yim-200 rounded p-3">
+                                                    <label className="text-[10px] uppercase tracking-wider text-yim-500 font-semibold">Acties</label>
+                                                    <div className="mt-2 flex flex-wrap gap-1">
+                                                        {['Aanmelden','Dossier bekijken','Dossier beoordelen','Dossier bewerken','Identificatie aanvragen','Identificatie beoordelen','Foto upload'].map(a => (
+                                                            <span key={a} className="text-[11px] bg-yim-50 border border-yim-300 rounded px-2 py-0.5 text-yim-700">{a}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="border border-yim-200 rounded p-3">
+                                                    <label className="text-[10px] uppercase tracking-wider text-yim-500 font-semibold">Scope</label>
+                                                    <p className="text-sm text-yim-700 mt-1.5 font-semibold">Werkgever</p>
+                                                    <p className="text-[11px] text-yim-500">Eigen werknemers · geen onderaannemers</p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 flex justify-end gap-2">
+                                                <button className="text-xs text-yim-500 hover:text-yim-700">Reset naar baseline</button>
+                                                <button className="text-xs bg-yim-orange text-white px-3 py-1.5 rounded font-medium">Klaar</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            // T4: User-centric Effective View — multi-role stacking gevisualiseerd vanuit user-perspectief
+            const renderT4 = () => {
+                const grantedRoles = [
+                    { name: 'HR Manager', grantedOn: '04/04/2025', grantedBy: 'Sanne K.', scope: 'Alle bedrijven', expiry: '—', source: 'permanent' },
+                    { name: 'Identificatie Beoordelaar', grantedOn: '12/03/2026', grantedBy: 'Mark V.', scope: 'Bedrijven: Shell, ABC, XYZ', expiry: '—', source: 'permanent' },
+                    { name: 'Bedrijven Accrediteer-Admin', grantedOn: '28/05/2026', grantedBy: 'Mark V.', scope: 'Bedrijven: Shell', expiry: '28/06/2026', source: 'delegated', reason: 'Vakantie-vervanging' }
+                ];
+                const effectivePerms = [
+                    { cat: 'Procesrechten — Dossier', perms: [
+                        { name: 'Dossier bekijken', source: 'HR Manager', conflict: false },
+                        { name: 'Dossier beoordelen', source: 'HR Manager', conflict: false },
+                        { name: 'Dossier bewerken', source: 'HR Manager', conflict: false }
+                    ]},
+                    { cat: 'Procesrechten — Identificatie', perms: [
+                        { name: 'Identificatie aanvragen', source: 'HR Manager + Identificatie Beoordelaar', conflict: false, dup: true },
+                        { name: 'Identificatie beoordelen', source: 'Identificatie Beoordelaar', conflict: false },
+                        { name: 'BSN inzage', source: 'Identificatie Beoordelaar', conflict: false, risk: true }
+                    ]},
+                    { cat: 'Beheerrechten', perms: [
+                        { name: 'Bedrijven accrediteren', source: 'Bedrijven Accrediteer-Admin (tijdelijk t/m 28/06)', conflict: false, temp: true }
+                    ]}
+                ];
+                return (
+                    <div className="space-y-4">
+                        {/* User header */}
+                        <div className="bg-white border border-yim-200 rounded-xl px-6 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-yim-700 text-white font-bold flex items-center justify-center">JV</div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-yim-700">Jan de Vries</h2>
+                                    <p className="text-xs text-yim-500">jan.devries@shell.nl · Member sinds 14/02/2024 · Last login 1u geleden</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button className="text-xs px-3 py-1.5 border border-yim-300 rounded text-yim-600">Audit-log bekijken</button>
+                                <button className="text-xs px-3 py-1.5 bg-yim-orange text-white rounded font-medium">+ Rol toewijzen</button>
+                            </div>
+                        </div>
+                        {/* Granted roles table — Snowflake style */}
+                        <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                            <div className="px-6 py-3 border-b border-yim-200 flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-yim-700">Toegewezen rollen <span className="text-yim-500 font-normal">({grantedRoles.length})</span></h3>
+                                <span className="text-[11px] text-yim-500 italic">Effective = UNION van alle rollen + tijdelijk gedelegeerde</span>
+                            </div>
+                            <table className="w-full text-sm">
+                                <thead className="bg-yim-50/40 text-[10px] uppercase tracking-wider text-yim-500">
+                                    <tr>
+                                        <th className="text-left px-4 py-2">Rol</th>
+                                        <th className="text-left px-4 py-2">Scope</th>
+                                        <th className="text-left px-4 py-2">Toegewezen door</th>
+                                        <th className="text-left px-4 py-2">Wanneer</th>
+                                        <th className="text-left px-4 py-2">Verloopt</th>
+                                        <th className="text-right px-4 py-2"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {grantedRoles.map((r, i) => (
+                                        <tr key={i} className={`border-t border-yim-100 hover:bg-yim-50/40 ${r.source === 'delegated' ? 'bg-amber-50/30' : ''}`}>
+                                            <td className="px-4 py-2.5 font-semibold text-yim-700">
+                                                {r.name}
+                                                {r.source === 'delegated' && <span className="ml-2 text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded uppercase">Tijdelijk</span>}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-xs text-yim-600">{r.scope}</td>
+                                            <td className="px-4 py-2.5 text-xs text-yim-600">{r.grantedBy}</td>
+                                            <td className="px-4 py-2.5 text-xs text-yim-500">{r.grantedOn}</td>
+                                            <td className="px-4 py-2.5 text-xs text-yim-500">{r.expiry === '—' ? <span className="text-yim-400">—</span> : <span className="text-amber-700 font-semibold">{r.expiry}</span>}</td>
+                                            <td className="px-4 py-2.5 text-right">
+                                                <button className="text-xs text-red-600 hover:text-red-800">Intrekken</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {/* Effective permissions consolidated view — Squarespace style */}
+                        <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                            <div className="px-6 py-3 border-b border-yim-200 bg-blue-50/30">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-yim-700">Effective Permissions</h3>
+                                        <p className="text-[11px] text-yim-500 mt-0.5">Bitwise UNION over alle toegewezen rollen. Source-attributie toont vanuit welke rol elke permissie komt.</p>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wider text-blue-700 font-bold bg-blue-100 border border-blue-300 px-2 py-0.5 rounded">Read-only view</span>
+                                </div>
+                            </div>
+                            {effectivePerms.map((g, gi) => (
+                                <React.Fragment key={gi}>
+                                    <div className="px-6 py-1.5 bg-yim-50/40 text-[10px] uppercase tracking-wider text-yim-500 font-semibold border-b border-yim-100">{g.cat}</div>
+                                    {g.perms.map((p, pi) => (
+                                        <div key={pi} className="px-6 py-2.5 border-b border-yim-100 last:border-0 flex items-center justify-between hover:bg-yim-50/30">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-4 h-4 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">✓</span>
+                                                <span className="text-sm text-yim-700">{p.name}</span>
+                                                {p.dup && <span className="text-[10px] font-semibold text-yim-500 bg-yim-100 border border-yim-200 px-1.5 py-0.5 rounded uppercase">Overlap</span>}
+                                                {p.temp && <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded uppercase">Tijdelijk</span>}
+                                                {p.risk && <span className="text-[10px] font-semibold text-red-700 bg-red-100 border border-red-300 px-1.5 py-0.5 rounded uppercase">Risk</span>}
+                                            </div>
+                                            <span className="text-[11px] text-yim-500 italic">via <span className="font-semibold">{p.source}</span></span>
+                                        </div>
+                                    ))}
+                                </React.Fragment>
+                            ))}
+                            <div className="px-6 py-3 border-t border-yim-200 bg-amber-50/40">
+                                <p className="text-[11px] text-amber-800">
+                                    <span className="font-bold">⚠ Conflict-detectie:</span> "Identificatie aanvragen" komt uit 2 rollen — overweeg <span className="underline cursor-pointer">"HR Manager" rol te beperken</span> of <span className="underline cursor-pointer">"Identificatie Beoordelaar" rol in te trekken</span>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="bg-yim-50/30 min-h-screen">
+                    <div className="max-w-6xl mx-auto px-6 py-8">
+                        {/* Intro */}
+                        <div className="mb-6 bg-white border border-yim-200 rounded-lg px-5 py-4">
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[10px] font-bold text-yim-orange uppercase tracking-wider">Toekomst — verkenning</span>
+                                        <span className="text-[10px] text-yim-400">·</span>
+                                        <span className="text-[10px] text-yim-500">Inspiratie: <a href={variantInfo.inspirationUrl} target="_blank" className="underline text-yim-orange">{variantInfo.inspiration} via Mobbin</a></span>
+                                    </div>
+                                    <h1 className="text-2xl font-bold text-yim-700">{variantInfo.title}</h1>
+                                    <p className="text-sm text-yim-600 opacity-80 mt-1">{variantInfo.summary}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-yim-700 bg-yim-50 border-l-2 border-yim-400 px-3 py-2 rounded mt-3">
+                                <span className="font-semibold">Waarom dit beter is dan huidig: </span>{variantInfo.why}
+                            </p>
+                        </div>
+
+                        {/* Stub UI */}
+                        {variant === 'T1' && renderT1()}
+                        {variant === 'T2' && renderT2()}
+                        {variant === 'T3' && renderT3()}
+                        {variant === 'T4' && renderT4()}
+
+                        {/* Disclaimer */}
+                        <p className="text-[11px] text-yim-400 italic text-center mt-6">
+                            Dit is een verkennende stub-UI gebaseerd op Mobbin-research · Geen functionele state, geen wiring naar bestaande rol-engine.
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Root Component with state management + concept toggle + product mode (Huidig / Toekomst)
         function Root() {
+            const [productMode, setProductMode] = useState('huidig'); // 'huidig' = bestaand prototype · 'toekomst' = nieuwe concepten
             const [concept, setConcept] = useState('A');
+            const [futureConcept, setFutureConcept] = useState('T1'); // T1 = catalog · T2 = wizard · T3 = tiered
             const [rolesA, setRolesA] = useState(initialRolesA);
             const [rolesC, setRolesC] = useState(initialRolesC);
             const [rolesG, setRolesG] = useState(initialRolesG);
@@ -4247,27 +4715,74 @@
                 <div>
                     {/* Fixture Toggle */}
                     <div className="bg-yim-950 text-white">
-                        <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Concept</span>
-                                <div className="flex bg-white/10 rounded-lg p-0.5">
-                                    <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        1: Profielen
-                                    </button>
-                                    <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        3: Taakafleiding
-                                    </button>
+                        <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex items-center gap-4 flex-wrap">
+                                {/* Product mode segmented button */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Product</span>
+                                    <div className="flex bg-white/10 rounded-lg p-0.5">
+                                        <button onClick={() => setProductMode('huidig')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${productMode === 'huidig' ? 'bg-white text-yim-700 shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                            Huidig
+                                        </button>
+                                        <button onClick={() => setProductMode('toekomst')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${productMode === 'toekomst' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                            Toekomst
+                                        </button>
+                                    </div>
                                 </div>
+                                {/* Concept switcher (alleen relevant in Huidig of Toekomst eigen variants) */}
+                                {productMode === 'huidig' ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Concept</span>
+                                        <div className="flex bg-white/10 rounded-lg p-0.5">
+                                            <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                1: Profielen
+                                            </button>
+                                            <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                3: Taakafleiding
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Variant</span>
+                                        <div className="flex bg-white/10 rounded-lg p-0.5">
+                                            <button onClick={() => setFutureConcept('T1')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${futureConcept === 'T1' ? 'bg-blue-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                T1: Workspace
+                                            </button>
+                                            <button onClick={() => setFutureConcept('T2')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${futureConcept === 'T2' ? 'bg-purple-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                T2: Matrix
+                                            </button>
+                                            <button onClick={() => setFutureConcept('T3')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${futureConcept === 'T3' ? 'bg-emerald-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                T3: Preset
+                                            </button>
+                                            <button onClick={() => setFutureConcept('T4')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${futureConcept === 'T4' ? 'bg-rose-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                T4: User-view
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <p className="text-xs text-white/40">
-                                {concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
-                                 : concept === 'C' ? 'Inzageniveau met suggestie · Categorieën volgen uit rolinstellingen'
-                                 : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
-                                 : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'}
+                                {productMode === 'huidig' ? (
+                                    concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
+                                     : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
+                                     : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'
+                                ) : (
+                                    futureConcept === 'T1' ? 'Categorized workspace (Zoom-style) — links nav 7 secties · rechts View/Edit/Scope grid per actie'
+                                     : futureConcept === 'T2' ? 'Comparison matrix (Vanta-style) — rijen capabilities × kolommen rollen · cellen ✓ Edit / 👁 View / ⊘ Geen'
+                                     : futureConcept === 'T3' ? 'Preset + Accordion (Deel-style) — kies baseline · customize sectie-voor-sectie · "Afwijking" badges'
+                                     : 'User-centric Effective View (Snowflake+Zendesk+Squarespace) — per user toon gestapelde rollen + consolidated effective permissions'
+                                )}
                             </p>
                         </div>
                     </div>
-                    <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} setConcept={setConcept} />
+                    {productMode === 'huidig' ? (
+                        <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} setConcept={setConcept} />
+                    ) : (
+                        <FutureRolesExplorer variant={futureConcept} />
+                    )}
                 </div>
             );
         }
