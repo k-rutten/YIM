@@ -2778,19 +2778,21 @@
                                                         </button>
                                                         <div className="min-w-0 flex-1">
                                                             <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
+                                                                <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>
+                                                                    {cat.name}
+                                                                    {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
+                                                                        <span className="ml-1.5 text-yim-500 opacity-60 font-normal text-[11px]">({visibleFieldCount}/{totalFields} velden)</span>
+                                                                    )}
+                                                                    {isActive && hiddenFieldCount > 0 && (
+                                                                        <span className="ml-1.5 text-amber-600 font-normal text-[11px]">({visibleFieldCount}/{totalFields} velden · {hiddenFieldCount} verborgen)</span>
+                                                                    )}
+                                                                </span>
                                                                 {isAllOrNothing && (
                                                                     <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control">
                                                                         <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                                                                     </svg>
                                                                 )}
                                                             </div>
-                                                            {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
-                                                                <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar</p>
-                                                            )}
-                                                            {isActive && hiddenFieldCount > 0 && (
-                                                                <p className="text-[11px] text-amber-600 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar · {hiddenFieldCount} handmatig verborgen</p>
-                                                            )}
                                                         </div>
                                                     </div>
                                                     {canExpand && (
@@ -3314,7 +3316,15 @@
                                                             </button>
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
+                                                                    <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>
+                                                                        {cat.name}
+                                                                        {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
+                                                                            <span className="ml-1.5 text-yim-500 opacity-60 font-normal text-[11px]">({visibleFieldCount}/{totalFields} velden)</span>
+                                                                        )}
+                                                                        {isActive && hiddenFieldCount > 0 && (
+                                                                            <span className="ml-1.5 text-amber-600 font-normal text-[11px]">({visibleFieldCount}/{totalFields} velden · {hiddenFieldCount} verborgen)</span>
+                                                                        )}
+                                                                    </span>
                                                                     {isAllOrNothing && (
                                                                         <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control">
                                                                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -3326,12 +3336,6 @@
                                                                 )}
                                                                 {!isDerived && !isOverridden && (
                                                                     <p className="text-[11px] text-yim-400 mt-0.5">Niet nodig voor huidige taken</p>
-                                                                )}
-                                                                {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
-                                                                    <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar</p>
-                                                                )}
-                                                                {isActive && hiddenFieldCount > 0 && (
-                                                                    <p className="text-[11px] text-amber-600 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar · {hiddenFieldCount} handmatig verborgen</p>
                                                                 )}
                                                             </div>
                                                         </div>
