@@ -138,11 +138,7 @@
             pay_slips: '12 loonstroken beschikbaar',
             id_copy: 'Paspoort_kopie.pdf',
             a1_certificate: 'Niet ingediend',
-            insurance_proof: 'Verzekeringsbewijs-2024.pdf',
-            // access_vehicle
-            license_plate: '12-AB-345',
-            license_plate_country: 'NL',
-            assigned_authorizations: 'Toegangsregel developer 4 (verlopen)'
+            insurance_proof: 'Verzekeringsbewijs-2024.pdf'
         };
 
         // YIM-secties (matching de Blacklist dossier-layout). Elke sectie heeft fields uit CATEGORIES.
@@ -157,7 +153,6 @@
             { id: 'compliance', title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
             { id: 'certificates', title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] },
             { id: 'documents', title: 'Bestanden', fields: ['employment_contract', 'pay_slips', 'id_copy', 'a1_certificate', 'insurance_proof'] },
-            { id: 'access', title: 'Toegang & Voertuig', fields: ['license_plate', 'license_plate_country', 'assigned_authorizations'] }
         ];
 
         // FIELD_DEFS wordt aangemaakt na CATEGORIES declaratie (zie hieronder)
@@ -171,7 +166,7 @@
                 description: 'Alle velden en dossieronderdelen zichtbaar',
                 canReveal: true,
                 canEditDossier: true,
-                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true, access_vehicle: true }
+                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true }
             },
             {
                 id: 'standard',
@@ -179,7 +174,7 @@
                 description: 'Basis- en werkgerelateerde velden, gevoelige data verborgen',
                 canReveal: true,
                 canEditDossier: true,
-                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: false }
+                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false }
             },
             {
                 id: 'operational',
@@ -187,7 +182,7 @@
                 description: 'Basisidentificatie, compliance en toegang',
                 canReveal: false,
                 canEditDossier: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: true }
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false }
             },
             {
                 id: 'minimal',
@@ -195,7 +190,7 @@
                 description: 'Alleen naam en VCA-certificaten',
                 canReveal: false,
                 canEditDossier: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false, access_vehicle: false }
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false }
             }
         ];
 
@@ -283,12 +278,6 @@
                 { id: 'id_copy', name: 'ID-document (kopie)', sensitivity: 'zeer_gevoelig' },
                 { id: 'a1_certificate', name: 'A1-verklaring (document)' },
                 { id: 'insurance_proof', name: 'Verzekeringsbewijs' }
-              ]},
-            { id: 'access_vehicle', name: 'Toegang & Voertuig', uiGroup: 'toegang', sensitivity: 'basis',
-              fields: [
-                { id: 'license_plate', name: 'Kenteken' },
-                { id: 'license_plate_country', name: 'Landcode kenteken' },
-                { id: 'assigned_authorizations', name: 'Toegewezen autorisaties' }
               ]}
         ];
         const UI_GROUPS = [
@@ -321,9 +310,7 @@
             // Documents
             'arbeidsovereenkomst': 'documents', 'loonstroken': 'documents',
             'id_kopie': 'documents', 'a1_verklaring': 'documents',
-            'verzekeringsbewijs': 'documents',
-            // Toegang
-            'access': 'access_vehicle'
+            'verzekeringsbewijs': 'documents'
         });
         const CATEGORY_SENSITIVITY = {};
         CATEGORIES.forEach(cat => { CATEGORY_SENSITIVITY[cat.id] = cat.sensitivity; });
@@ -339,13 +326,13 @@
 
         const INITIAL_PRESETS = [
             { id: 'full', name: 'Volledige inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true, access_vehicle: true } },
+              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true } },
             { id: 'standard', name: 'Standaard inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: false } },
+              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false } },
             { id: 'operational', name: 'Operationele inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false, access_vehicle: true } },
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false } },
             { id: 'minimal', name: 'Minimale inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false, access_vehicle: false } }
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false } }
         ];
 
         // ============ CONCEPT C: Sensitivity Levels ============
