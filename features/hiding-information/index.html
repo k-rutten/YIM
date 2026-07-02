@@ -114,14 +114,6 @@
             contact_person_name: 'Patrick van der Berg',
             contact_person_email: 'patrick@abcbouw.nl',
             contact_person_phone: '+31 10 1234567',
-            // social_charges
-            half_time_work_for_client: 'Ja',
-            part_of_purchase_agreement: 'Nee',
-            limosa_notification: 'Niet van toepassing',
-            posted_workers_registered: 'Onbekend',
-            socially_insured_nl: 'Ja',
-            a1_document: 'Niet ingediend',
-            a1_document_validity: 'N.v.t.',
             // compliance
             vca_exemption: 'Ja',
             vca_exemption_reason: 'In bezit van geldige certificering',
@@ -149,7 +141,6 @@
             { id: 'contact_person', title: 'Contactpersoon (werkgever)', fields: ['contact_person_name', 'contact_person_email', 'contact_person_phone'] },
             { id: 'address', title: 'Verblijfplaats', fields: ['locality', 'country_of_residence'] },
             { id: 'identification', title: 'Identificatie', fields: ['nationality', 'date_of_birth', 'id_type', 'id_document_number', 'id_expiration_date', 'bsn', 'vog'] },
-            { id: 'specification', title: 'Specificatie gewerkte uren', fields: ['half_time_work_for_client', 'part_of_purchase_agreement', 'limosa_notification', 'posted_workers_registered', 'socially_insured_nl', 'a1_document', 'a1_document_validity'] },
             { id: 'compliance', title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
             { id: 'certificates', title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] },
             { id: 'documents', title: 'Bestanden', fields: ['employment_contract', 'pay_slips', 'id_copy', 'a1_certificate', 'insurance_proof'] },
@@ -166,7 +157,7 @@
                 description: 'Alle velden en dossieronderdelen zichtbaar',
                 canReveal: true,
                 canEditDossier: true,
-                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true }
+                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, certificates: true, documents: true }
             },
             {
                 id: 'standard',
@@ -174,7 +165,7 @@
                 description: 'Basis- en werkgerelateerde velden, gevoelige data verborgen',
                 canReveal: true,
                 canEditDossier: true,
-                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, certificates: true, documents: false }
             },
             {
                 id: 'operational',
@@ -182,7 +173,7 @@
                 description: 'Basisidentificatie, compliance en toegang',
                 canReveal: false,
                 canEditDossier: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, certificates: true, documents: false }
             },
             {
                 id: 'minimal',
@@ -190,7 +181,7 @@
                 description: 'Alleen naam en VCA-certificaten',
                 canReveal: false,
                 canEditDossier: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, certificates: true, documents: false }
             }
         ];
 
@@ -246,16 +237,6 @@
                 { id: 'contact_person_email', name: 'Werkgever-contactpersoon: E-mail' },
                 { id: 'contact_person_phone', name: 'Werkgever-contactpersoon: Telefoon' }
               ]},
-            { id: 'social_charges', name: 'Sociale lasten', uiGroup: 'arbeid', sensitivity: 'zeer_gevoelig',
-              fields: [
-                { id: 'half_time_work_for_client', name: 'Werkzaamheden 50%+ bij opdrachtgever' },
-                { id: 'part_of_purchase_agreement', name: 'Onderdeel koopovereenkomst' },
-                { id: 'limosa_notification', name: 'Limosa aangifte (meldingsbewijs)' },
-                { id: 'posted_workers_registered', name: 'Gemeld bij PostedWorkers-meldloket' },
-                { id: 'socially_insured_nl', name: 'Sociaal verzekerd in Nederland' },
-                { id: 'a1_document', name: 'A1 / E101 document' },
-                { id: 'a1_document_validity', name: 'Geldigheidsdatum A1 / E101' }
-              ]},
             { id: 'compliance', name: 'Compliance & Instructies', uiGroup: 'kwalificaties', sensitivity: 'basis',
               fields: [
                 { id: 'vca_exemption', name: 'VCA-vrijstelling (Ja/Nee)' },
@@ -301,8 +282,6 @@
             // Government-ID (BSN-detail én VOG horen hier)
             'identificatie_bsn': 'government_id',
             // Arbeidsrelatie (posted_worker en sociale_lasten verhuizen)
-            'posted_worker': 'social_charges', 'sociale_lasten': 'social_charges',
-            'hours': 'social_charges', 'gewerkte_uren': 'social_charges',
             // Certificaten (VOG verhuist naar government_id!)
             'vca': 'certificates', 'vog': 'government_id', 'bhv': 'certificates',
             'werkvergunning': 'certificates', 'rijbewijs': 'certificates',
@@ -326,13 +305,13 @@
 
         const INITIAL_PRESETS = [
             { id: 'full', name: 'Volledige inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, social_charges: true, compliance: true, certificates: true, documents: true } },
+              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, certificates: true, documents: true } },
             { id: 'standard', name: 'Standaard inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, social_charges: false, compliance: true, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, certificates: true, documents: false } },
             { id: 'operational', name: 'Operationele inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: true, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, certificates: true, documents: false } },
             { id: 'minimal', name: 'Minimale inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, social_charges: false, compliance: false, certificates: true, documents: false } }
+              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, certificates: true, documents: false } }
         ];
 
         // ============ CONCEPT C: Sensitivity Levels ============
@@ -889,7 +868,6 @@
                     description: 'Identificatie, kwalificaties en certificaten.',
                     sections: [
                         { title: 'Identificatie', fields: ['nationality', 'date_of_birth', 'id_type', 'id_document_number', 'id_expiration_date', 'bsn', 'vog'] },
-                        { title: 'Specificatie gewerkte uren', fields: ['half_time_work_for_client', 'part_of_purchase_agreement', 'limosa_notification', 'posted_workers_registered', 'socially_insured_nl', 'a1_document', 'a1_document_validity'] },
                         { title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
                         { title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] }
                     ]
@@ -1625,7 +1603,6 @@
                 id: 'arbeid', label: 'Arbeid',
                 groups: [
                     { id: 'grp_employment', name: 'Arbeidsrelatie', subcatIds: ['employment'] },
-                    { id: 'grp_social_charges', name: 'Sociale lasten', subcatIds: ['posted_worker'] }
                 ]
             },
             {
