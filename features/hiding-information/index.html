@@ -97,12 +97,6 @@
             language: 'Nederlands',
             locality: 'Rotterdam',
             country_of_residence: 'Nederland',
-            // government_id (all-or-nothing)
-            id_type: 'Paspoort',
-            id_document_number: 'NX12345678',
-            id_expiration_date: '17-10-2030',
-            bsn: '123 45 6789',
-            vog: 'Geldig (afgegeven 15-01-2024)',
             // employment
             main_contractor: 'Shell Nederland B.V.',
             main_contractor_kvk: '24123456',
@@ -140,7 +134,7 @@
             { id: 'employer', title: 'Gegevens werkgever', fields: ['main_contractor', 'main_contractor_kvk', 'employer', 'employer_kvk', 'job_functions'] },
             { id: 'contact_person', title: 'Contactpersoon (werkgever)', fields: ['contact_person_name', 'contact_person_email', 'contact_person_phone'] },
             { id: 'address', title: 'Verblijfplaats', fields: ['locality', 'country_of_residence'] },
-            { id: 'identification', title: 'Identificatie', fields: ['nationality', 'date_of_birth', 'id_type', 'id_document_number', 'id_expiration_date', 'bsn', 'vog'] },
+            { id: 'identification', title: 'Identificatie', fields: ['nationality', 'date_of_birth'] },
             { id: 'compliance', title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
             { id: 'certificates', title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] },
             { id: 'documents', title: 'Bestanden', fields: ['employment_contract', 'pay_slips', 'id_copy', 'a1_certificate', 'insurance_proof'] },
@@ -157,7 +151,7 @@
                 description: 'Alle velden en dossieronderdelen zichtbaar',
                 canReveal: true,
                 canEditDossier: true,
-                allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, certificates: true, documents: true }
+                allowedCategories: { identity: true, contact: true, employment: true, compliance: true, certificates: true, documents: true }
             },
             {
                 id: 'standard',
@@ -165,7 +159,7 @@
                 description: 'Basis- en werkgerelateerde velden, gevoelige data verborgen',
                 canReveal: true,
                 canEditDossier: true,
-                allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: true, employment: true, compliance: true, certificates: true, documents: false }
             },
             {
                 id: 'operational',
@@ -173,7 +167,7 @@
                 description: 'Basisidentificatie, compliance en toegang',
                 canReveal: false,
                 canEditDossier: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: false, employment: false, compliance: true, certificates: true, documents: false }
             },
             {
                 id: 'minimal',
@@ -181,7 +175,7 @@
                 description: 'Alleen naam en VCA-certificaten',
                 canReveal: false,
                 canEditDossier: false,
-                allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, certificates: true, documents: false }
+                allowedCategories: { identity: true, contact: false, employment: false, compliance: false, certificates: true, documents: false }
             }
         ];
 
@@ -215,14 +209,6 @@
                 { id: 'language', name: 'Taal' },
                 { id: 'locality', name: 'Plaats' },
                 { id: 'country_of_residence', name: 'Land van vestiging' }
-              ]},
-            { id: 'government_id', name: 'Overheids-ID', uiGroup: 'identificatie', sensitivity: 'zeer_gevoelig',
-              fields: [
-                { id: 'id_type', name: 'Type ID Bewijs' },
-                { id: 'id_document_number', name: 'Documentnummer identiteitsbewijs' },
-                { id: 'id_expiration_date', name: 'Geldigheidsdatum identiteitsbewijs' },
-                { id: 'bsn', name: 'BSN / EU persoonsnummer', policyLocked: true, policyReason: 'Door policy uitgeschakeld — BSN nooit zichtbaar voor cross-company rollen' },
-                { id: 'vog', name: 'VOG (Verklaring omtrent gedrag)' }
               ]},
             { id: 'employment', name: 'Arbeidsrelatie', uiGroup: 'arbeid', sensitivity: 'gevoelig',
               fields: [
@@ -305,13 +291,13 @@
 
         const INITIAL_PRESETS = [
             { id: 'full', name: 'Volledige inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: true, employment: true, compliance: true, certificates: true, documents: true } },
+              allowedCategories: { identity: true, contact: true, employment: true, compliance: true, certificates: true, documents: true } },
             { id: 'standard', name: 'Standaard inzage', canReveal: true,
-              allowedCategories: { identity: true, contact: true, government_id: false, employment: true, compliance: true, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: true, employment: true, compliance: true, certificates: true, documents: false } },
             { id: 'operational', name: 'Operationele inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: true, certificates: true, documents: false } },
+              allowedCategories: { identity: true, contact: false, employment: false, compliance: true, certificates: true, documents: false } },
             { id: 'minimal', name: 'Minimale inzage', canReveal: false,
-              allowedCategories: { identity: true, contact: false, government_id: false, employment: false, compliance: false, certificates: true, documents: false } }
+              allowedCategories: { identity: true, contact: false, employment: false, compliance: false, certificates: true, documents: false } }
         ];
 
         // ============ CONCEPT C: Sensitivity Levels ============
@@ -867,7 +853,7 @@
                     number: 3, title: 'Aanvullende gegevens',
                     description: 'Identificatie, kwalificaties en certificaten.',
                     sections: [
-                        { title: 'Identificatie', fields: ['nationality', 'date_of_birth', 'id_type', 'id_document_number', 'id_expiration_date', 'bsn', 'vog'] },
+                        { title: 'Identificatie', fields: ['nationality', 'date_of_birth'] },
                         { title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
                         { title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] }
                     ]
