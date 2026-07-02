@@ -89,14 +89,12 @@
             last_name_prefix: 'de',
             last_name: 'Vries',
             date_of_birth: '15-03-1985',
-            nationality: 'Nederlandse',
             photo: 'Pasfoto beschikbaar',
             // contact
             email: 'jan.devries@example.nl',
             phone: '+31 6 1234 5678',
             language: 'Nederlands',
             locality: 'Rotterdam',
-            country_of_residence: 'Nederland',
             // employment
             main_contractor: 'Shell Nederland B.V.',
             main_contractor_kvk: '24123456',
@@ -111,20 +109,12 @@
             // compliance
             vca_exemption: 'Ja',
             vca_exemption_reason: 'In bezit van geldige certificering',
-            company_specific_instructions: 'Voltooid (Q1 2025)',
-            deltalinqs_gate_instructions: 'Niet vereist',
-            h2s_instructions: 'Niet vereist',
             // certificates
             vca_certificate: 'VCA-VOL · Geldig tot 31-12-2025',
             bhv_certificate: 'Geldig tot 15-06-2025',
             work_permit: 'N.v.t. (NL nationaliteit)',
-            drivers_license: 'B (geldig)',
             // documents
-            employment_contract: 'Arbeidsovereenkomst-2023-001.pdf',
-            pay_slips: '12 loonstroken beschikbaar',
-            id_copy: 'Paspoort_kopie.pdf',
-            a1_certificate: 'Niet ingediend',
-            insurance_proof: 'Verzekeringsbewijs-2024.pdf'
+            a1_certificate: 'Niet ingediend'
         };
 
         // YIM-secties (matching de Blacklist dossier-layout). Elke sectie heeft fields uit CATEGORIES.
@@ -133,11 +123,11 @@
             { id: 'personalia', title: 'Personalia', fields: ['first_name', 'initials', 'last_name_prefix', 'last_name', 'language', 'email', 'phone'] },
             { id: 'employer', title: 'Gegevens werkgever', fields: ['main_contractor', 'main_contractor_kvk', 'employer', 'employer_kvk', 'job_functions'] },
             { id: 'contact_person', title: 'Contactpersoon (werkgever)', fields: ['contact_person_name', 'contact_person_email', 'contact_person_phone'] },
-            { id: 'address', title: 'Verblijfplaats', fields: ['locality', 'country_of_residence'] },
-            { id: 'identification', title: 'Identificatie', fields: ['nationality', 'date_of_birth'] },
-            { id: 'compliance', title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
-            { id: 'certificates', title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] },
-            { id: 'documents', title: 'Bestanden', fields: ['employment_contract', 'pay_slips', 'id_copy', 'a1_certificate', 'insurance_proof'] },
+            { id: 'address', title: 'Verblijfplaats', fields: ['locality'] },
+            { id: 'identification', title: 'Identificatie', fields: ['date_of_birth'] },
+            { id: 'compliance', title: 'Compliance', fields: ['vca_exemption', 'vca_exemption_reason'] },
+            { id: 'certificates', title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit'] },
+            { id: 'documents', title: 'Bestanden', fields: ['a1_certificate'] },
         ];
 
         // FIELD_DEFS wordt aangemaakt na CATEGORIES declaratie (zie hieronder)
@@ -199,7 +189,6 @@
                 { id: 'last_name_prefix', name: 'Tussenvoegsel' },
                 { id: 'last_name', name: 'Achternaam' },
                 { id: 'date_of_birth', name: 'Geboortedatum' },
-                { id: 'nationality', name: 'Nationaliteit' },
                 { id: 'photo', name: 'Foto' }
               ]},
             { id: 'contact', name: 'Contact', uiGroup: 'persoonsgegevens', sensitivity: 'basis',
@@ -207,8 +196,7 @@
                 { id: 'email', name: 'E-mailadres' },
                 { id: 'phone', name: 'Telefoonnummer' },
                 { id: 'language', name: 'Taal' },
-                { id: 'locality', name: 'Plaats' },
-                { id: 'country_of_residence', name: 'Land van vestiging' }
+                { id: 'locality', name: 'Plaats' }
               ]},
             { id: 'employment', name: 'Arbeidsrelatie', uiGroup: 'arbeid', sensitivity: 'gevoelig',
               fields: [
@@ -223,28 +211,20 @@
                 { id: 'contact_person_email', name: 'Werkgever-contactpersoon: E-mail' },
                 { id: 'contact_person_phone', name: 'Werkgever-contactpersoon: Telefoon' }
               ]},
-            { id: 'compliance', name: 'Compliance & Instructies', uiGroup: 'kwalificaties', sensitivity: 'basis',
+            { id: 'compliance', name: 'Compliance', uiGroup: 'kwalificaties', sensitivity: 'basis',
               fields: [
                 { id: 'vca_exemption', name: 'VCA-vrijstelling (Ja/Nee)' },
-                { id: 'vca_exemption_reason', name: 'Reden van vrijstelling' },
-                { id: 'company_specific_instructions', name: 'Bedrijfsspecifieke regels' },
-                { id: 'deltalinqs_gate_instructions', name: 'Deltalinqs poortinstructies' },
-                { id: 'h2s_instructions', name: 'H2S instructies' }
+                { id: 'vca_exemption_reason', name: 'Reden van vrijstelling' }
               ]},
             { id: 'certificates', name: 'Certificaten', uiGroup: 'kwalificaties', sensitivity: 'gevoelig',
               fields: [
                 { id: 'vca_certificate', name: 'VCA-certificaat' },
                 { id: 'bhv_certificate', name: 'BHV-certificaat' },
-                { id: 'work_permit', name: 'Werkvergunning' },
-                { id: 'drivers_license', name: 'Rijbewijs' }
+                { id: 'work_permit', name: 'Werkvergunning' }
               ]},
             { id: 'documents', name: 'Bestanden', uiGroup: 'bestanden', sensitivity: 'gevoelig',
               fields: [
-                { id: 'employment_contract', name: 'Arbeidsovereenkomst' },
-                { id: 'pay_slips', name: 'Loonstroken', sensitivity: 'zeer_gevoelig' },
-                { id: 'id_copy', name: 'ID-document (kopie)', sensitivity: 'zeer_gevoelig' },
-                { id: 'a1_certificate', name: 'A1-verklaring (document)' },
-                { id: 'insurance_proof', name: 'Verzekeringsbewijs' }
+                { id: 'a1_certificate', name: 'A1-verklaring (document)' }
               ]}
         ];
         const UI_GROUPS = [
@@ -846,16 +826,16 @@
                         { title: 'Personalia', fields: ['first_name', 'initials', 'last_name_prefix', 'last_name', 'language', 'email', 'phone'] },
                         { title: 'Gegevens werkgever', fields: ['main_contractor', 'main_contractor_kvk', 'employer', 'employer_kvk', 'job_functions'] },
                         { title: 'Contactpersoon (werkgever)', fields: ['contact_person_name', 'contact_person_email', 'contact_person_phone'] },
-                        { title: 'Verblijfplaats', fields: ['locality', 'country_of_residence'] }
+                        { title: 'Verblijfplaats', fields: ['locality'] }
                     ]
                 },
                 {
                     number: 3, title: 'Aanvullende gegevens',
                     description: 'Identificatie, kwalificaties en certificaten.',
                     sections: [
-                        { title: 'Identificatie', fields: ['nationality', 'date_of_birth'] },
-                        { title: 'Compliance & Instructies', fields: ['vca_exemption', 'vca_exemption_reason', 'company_specific_instructions', 'deltalinqs_gate_instructions', 'h2s_instructions'] },
-                        { title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit', 'drivers_license'] }
+                        { title: 'Identificatie', fields: ['date_of_birth'] },
+                        { title: 'Compliance', fields: ['vca_exemption', 'vca_exemption_reason'] },
+                        { title: 'Certificaten', fields: ['vca_certificate', 'bhv_certificate', 'work_permit'] }
                     ]
                 }
             ];
