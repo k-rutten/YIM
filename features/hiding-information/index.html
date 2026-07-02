@@ -3074,7 +3074,7 @@
                                                     {fieldOverrideCount > 0 && <span className="text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">{fieldOverrideCount} veld-override</span>}
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald. Klik op de checkbox om de hele categorie te overriden, of klap open voor veld-niveau controle.</p>
+                                            <p className="text-xs text-yim-600 opacity-70 mt-1 leading-relaxed">De velden worden automatisch bepaald op basis van de geconfigureerde rol maar je kan handmatig aanpassingen maken mocht dit niet toereikend zijn. Selecteer hier de categorie en/of velden die je wilt tonen/verbergen.</p>
                                             {/* Niveau (CompanyAccessLevel) — uitleg per gekozen bereik */}
                                             {(() => {
                                                 const lvl = editForm.roleSettings?.niveau;
@@ -3123,8 +3123,8 @@
                                                             <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">Gevoeligheidsniveau van actieve categorieën</p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: markerColor }}>{markerLabel}</span>
-                                                            <p className="text-[10px] text-yim-500 opacity-70 mt-0.5">{activeNames.length} categorie(ën) actief</p>
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border" style={{ color: markerColor, backgroundColor: markerColor + '10', borderColor: markerColor + '40' }}>{markerLabel}</span>
+                                                            <p className="text-[10px] text-yim-500 opacity-70 mt-1">{activeNames.length} {activeNames.length === 1 ? 'categorie' : 'categorieën'} actief</p>
                                                         </div>
                                                     </div>
                                                     {/* Gradient balk met segmenten */}
@@ -3175,12 +3175,30 @@
                                                     <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
                                                         onClick={() => canExpand && toggleExpand(cat.id)}>
                                                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            {/* Checkbox — apart klikbaar */}
-                                                            <button onClick={(e) => { e.stopPropagation(); toggleOverride(cat.id); }}
-                                                                className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${isActive ? isOverridden ? 'bg-amber-500 border-amber-500' : 'bg-yim-500 border-yim-500' : 'bg-white border-yim-300 hover:border-yim-500'}`}
-                                                                title={isActive ? 'Klik om te verbergen' : 'Klik om te tonen'}>
-                                                                {isActive && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                                            </button>
+                                                            {/* Checkbox — apart klikbaar. 3 states: checked / intermediate (some fields hidden) / unchecked */}
+                                                            {(() => {
+                                                                const isIntermediate = isActive && !isAllOrNothing && hiddenFieldCount > 0 && visibleFieldCount > 0;
+                                                                const stateClass = !isActive
+                                                                    ? 'bg-white border-yim-300 hover:border-yim-500'
+                                                                    : isOverridden
+                                                                        ? 'bg-amber-500 border-amber-500'
+                                                                        : 'bg-yim-500 border-yim-500';
+                                                                const title = isIntermediate
+                                                                    ? `${visibleFieldCount}/${totalFields} velden zichtbaar — klik om hele categorie te verbergen`
+                                                                    : isActive ? 'Klik om te verbergen' : 'Klik om te tonen';
+                                                                return (
+                                                                    <button onClick={(e) => { e.stopPropagation(); toggleOverride(cat.id); }}
+                                                                        className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${stateClass}`}
+                                                                        title={title}>
+                                                                        {isActive && isIntermediate && (
+                                                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14" /></svg>
+                                                                        )}
+                                                                        {isActive && !isIntermediate && (
+                                                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })()}
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 flex-wrap">
                                                                     <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
@@ -3338,54 +3356,24 @@
                                         {/* ===== 'In de praktijk' — concrete persoon-type ✓/✗ obv niveau-keuze ===== */}
                                         {(() => {
                                             const niveau = editForm.roleSettings?.niveau;
-                                            const finalCats2 = { ...derivedCats };
-                                            Object.entries(overrides).forEach(([k, v]) => { finalCats2[k] = v; });
-                                            const heeftBSN = !!finalCats2.government_id;
-                                            const scenarios = {
-                                                own: [
-                                                    { label: 'Mezelf', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Andere medewerkers eigen bedrijf', visible: false, detail: 'niveau te beperkt' },
-                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau te beperkt' }
-                                                ],
-                                                employer: [
-                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau Werkgever blokkeert' },
-                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
-                                                ],
-                                                employerAndSubContractors: [
-                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Onderaannemer-personen', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' },
-                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
-                                                ],
-                                                all: [
-                                                    { label: 'Alle personen in tenant', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' }
-                                                ],
-                                                departments: [
-                                                    { label: 'Personen in toegewezen afdelingen', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Andere personen', visible: false, detail: 'buiten afdelings-scope' }
-                                                ],
-                                                managerAndEmployees: [
-                                                    { label: 'Directe rapportages', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Andere personen', visible: false, detail: 'buiten manager-relatie' }
-                                                ]
-                                            }[niveau] || [];
-                                            if (scenarios.length === 0) return null;
+                                            // Figma scope-note: éénregelig, groene check + scope-tekst per niveau
+                                            const scopeText = {
+                                                own: 'Data van jezelf',
+                                                employer: 'Data van personen in dienst bij eigen werkgever',
+                                                employerAndSubContractors: 'Data van personen in dienst bij eigen werkgever én onderaannemers',
+                                                all: 'Data van alle personen in tenant, ongeacht werkgever',
+                                                departments: 'Data van personen in toegewezen afdelingen',
+                                                managerAndEmployees: 'Data van directe rapportages'
+                                            }[niveau];
+                                            if (!scopeText) return null;
                                             return (
-                                                <div className="border-t-2 border-yim-200 px-5 py-4 bg-gradient-to-br from-yim-50 to-white">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <h4 className="text-sm font-bold text-yim-700 uppercase tracking-wider">In de praktijk</h4>
-                                                        <span className="text-[10px] text-yim-500 opacity-60 italic">Bij niveau-keuze</span>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        {scenarios.map((s, i) => (
-                                                            <div key={i} className="flex items-center gap-2 text-[12px]">
-                                                                <span className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-[10px] ${s.visible ? 'bg-green-100 text-green-700' : 'bg-yim-100 text-yim-400'}`}>
-                                                                    {s.visible ? '✓' : '✗'}
-                                                                </span>
-                                                                <span className="text-yim-700 font-medium">{s.label}</span>
-                                                                <span className="text-yim-500 opacity-70">— {s.detail}</span>
-                                                            </div>
-                                                        ))}
+                                                <div className="border-t border-yim-200 px-5 py-4">
+                                                    <h4 className="text-sm font-semibold text-yim-700 mb-2">Data inzage in de praktijk</h4>
+                                                    <div className="flex items-center gap-2 text-[13px]">
+                                                        <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                        </span>
+                                                        <span className="text-yim-700">{scopeText}</span>
                                                     </div>
                                                 </div>
                                             );
