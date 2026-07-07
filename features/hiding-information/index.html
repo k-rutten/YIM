@@ -3198,13 +3198,13 @@
                                                     <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
                                                         onClick={() => canExpand && toggleExpand(cat.id)}>
                                                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            {/* Checkbox — apart klikbaar. Per Figma annotatie 3 states:
-                                                                selected (all fields on) / indeterminate (some fields off) / unselected.
-                                                                Indeterminate geldt ook als visibleFieldCount === 0 want "not all fields selected". */}
+                                                            {/* Checkbox — per UI Kit + Figma spec:
+                                                                36×36 hit-area (button padding) rondom 20×20 visuele box.
+                                                                3 states: selected / indeterminate (some fields off) / unselected. */}
                                                             {(() => {
                                                                 const isIndeterminate = isActive && !isAllOrNothing && hiddenFieldCount > 0;
-                                                                const stateClass = !isActive
-                                                                    ? 'bg-white border-yim-300 hover:border-yim-500'
+                                                                const boxClass = !isActive
+                                                                    ? 'bg-white border-yim-300'
                                                                     : isOverridden
                                                                         ? 'bg-amber-500 border-amber-500'
                                                                         : 'bg-yim-500 border-yim-500';
@@ -3215,14 +3215,16 @@
                                                                 return (
                                                                     <button onClick={(e) => { e.stopPropagation(); toggleOverride(cat.id); }}
                                                                         role="checkbox" aria-checked={ariaChecked} aria-label={`${cat.name} categorie`}
-                                                                        className={`w-9 h-9 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${stateClass}`}
+                                                                        className="p-2 flex items-center justify-center flex-shrink-0 rounded hover:bg-yim-50 transition-colors"
                                                                         title={title}>
-                                                                        {isActive && isIndeterminate && (
-                                                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14" /></svg>
-                                                                        )}
-                                                                        {isActive && !isIndeterminate && (
-                                                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                                                        )}
+                                                                        <span className={`w-5 h-5 rounded-[4px] flex items-center justify-center border-2 transition-colors ${boxClass}`}>
+                                                                            {isActive && isIndeterminate && (
+                                                                                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14" /></svg>
+                                                                            )}
+                                                                            {isActive && !isIndeterminate && (
+                                                                                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                                            )}
+                                                                        </span>
                                                                     </button>
                                                                 );
                                                             })()}
@@ -3371,11 +3373,12 @@
                                                     <p className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Tijdelijk onthullen</p>
                                                     <p className="text-sm text-yim-500 opacity-70" style={{ fontFamily: 'Nunito, sans-serif' }}>Gemaskeerde velden 5 sec tonen</p>
                                                 </div>
-                                                <div className="inline-flex rounded-lg border border-yim-200 overflow-hidden">
+                                                {/* Toggle per Figma spec 9703:1201 — 247×36 (twee even brede knoppen) */}
+                                                <div className="inline-flex h-9 rounded-lg border border-yim-200 overflow-hidden" style={{ width: '247px' }}>
                                                     <button onClick={() => setEditForm(prev => ({ ...prev, canReveal: true }))}
-                                                        className={`px-6 py-1.5 text-sm font-medium transition-all ${editForm.canReveal ? 'bg-teal-500 text-white' : 'bg-white text-yim-600 hover:bg-yim-50'}`}>Aan</button>
+                                                        className={`flex-1 text-sm font-semibold transition-all ${editForm.canReveal ? 'bg-yim-500 text-white' : 'bg-white text-yim-600 hover:bg-yim-50'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>Aan</button>
                                                     <button onClick={() => setEditForm(prev => ({ ...prev, canReveal: false }))}
-                                                        className={`px-6 py-1.5 text-sm font-medium transition-all border-l border-yim-200 ${!editForm.canReveal ? 'bg-yim-100 text-yim-700' : 'bg-white text-yim-600 hover:bg-yim-50'}`}>Uit</button>
+                                                        className={`flex-1 text-sm font-semibold transition-all border-l border-yim-200 ${!editForm.canReveal ? 'bg-yim-50 text-yim-700' : 'bg-white text-yim-600 hover:bg-yim-50'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>Uit</button>
                                                 </div>
                                             </div>
                                         </div>
