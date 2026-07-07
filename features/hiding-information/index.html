@@ -3754,6 +3754,51 @@
                             </div>
                         </div>
 
+                        {/* ===== Sticky footer: risico-badge + samenvatting + acties ===== */}
+                        <div className="bg-white border-t border-yim-200 px-6 py-3 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                {(() => {
+                                    // Bereken risico-niveau uit actieve categorieën
+                                    const effectiveCats = concept === 'A'
+                                        ? (linkedProfile?.allowedCategories || {})
+                                        : concept === 'G'
+                                        ? (() => {
+                                            const d = deriveTo9Categories(editForm.roleSettings || createDefaultRoleSettings());
+                                            const merged = { ...d.allowedCategories };
+                                            Object.entries(editForm._overrides || {}).forEach(([k,v]) => { merged[k] = v; });
+                                            return merged;
+                                        })()
+                                        : (editForm.allowedCategories || {});
+                                    const sensitivityToLevel = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
+                                    const sensitivityLabels = { 1: 'Geen', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
+                                    let maxLevel = 1;
+                                    Object.entries(effectiveCats).forEach(([catId, active]) => {
+                                        if (!active) return;
+                                        const cat = CATEGORIES.find(c => c.id === catId);
+                                        if (!cat) return;
+                                        const lvl = sensitivityToLevel[cat.sensitivity] || 1;
+                                        if (lvl > maxLevel) maxLevel = lvl;
+                                    });
+                                    const level = SENSITIVITY_LEVELS.find(l => l.level === maxLevel);
+                                    if (!level) return null;
+                                    return (
+                                        <>
+                                            <span className="text-xs text-yim-500 opacity-70">Risico-inzage</span>
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border" style={{ color: level.color, backgroundColor: level.color + '10', borderColor: level.color + '40' }}>{sensitivityLabels[maxLevel]}</span>
+                                            <span className="text-xs text-yim-500 opacity-70">·</span>
+                                            <span className="text-xs text-yim-600">{totalCatCount}/{totalCatMax} categorieën</span>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={closeRoleEditor} className="px-4 py-2 text-sm text-yim-600 hover:bg-yim-100 rounded-lg transition-colors">Annuleren</button>
+                                <button onClick={saveRole} disabled={!editForm.name} className="px-5 py-2 bg-yim-500 text-white text-sm font-medium rounded-lg hover:bg-yim-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {isNewRole ? 'Rol aanmaken' : 'Opslaan'}
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Delete Confirmation */}
                         {deleteConfirm && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
