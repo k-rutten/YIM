@@ -3754,11 +3754,15 @@
                             </div>
                         </div>
 
-                        {/* ===== Sticky footer: risico-badge + samenvatting + acties ===== */}
+                        {/* ===== Sticky bottom-nav per Figma node 9486-1453 =====
+                             Layout: Terug links · (Risico-inzage: [level pill] [count pill] Opslaan) rechts */}
                         <div className="bg-white border-t border-yim-200 px-6 py-3 flex items-center justify-between shrink-0">
+                            <button onClick={closeRoleEditor} className="text-sm font-semibold text-yim-500 hover:text-yim-700 transition-colors px-2 py-1">
+                                Terug
+                            </button>
                             <div className="flex items-center gap-3">
                                 {(() => {
-                                    // Bereken risico-niveau uit actieve categorieën
+                                    // Bereken risico-niveau + velden-count uit actieve categorieën
                                     const effectiveCats = concept === 'A'
                                         ? (linkedProfile?.allowedCategories || {})
                                         : concept === 'G'
@@ -3772,28 +3776,32 @@
                                     const sensitivityToLevel = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
                                     const sensitivityLabels = { 1: 'Geen', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
                                     let maxLevel = 1;
-                                    Object.entries(effectiveCats).forEach(([catId, active]) => {
-                                        if (!active) return;
-                                        const cat = CATEGORIES.find(c => c.id === catId);
-                                        if (!cat) return;
+                                    let totalFields = 0;
+                                    let selectedFields = 0;
+                                    const fieldOverrides = editForm._fieldOverrides || {};
+                                    CATEGORIES.forEach(cat => {
+                                        totalFields += cat.fields.length;
+                                        if (!effectiveCats[cat.id]) return; // categorie uit → geen veld geselecteerd
+                                        const catFO = fieldOverrides[cat.id] || {};
+                                        const hidden = Object.values(catFO).filter(v => v === false).length;
+                                        selectedFields += (cat.fields.length - hidden);
                                         const lvl = sensitivityToLevel[cat.sensitivity] || 1;
                                         if (lvl > maxLevel) maxLevel = lvl;
                                     });
                                     const level = SENSITIVITY_LEVELS.find(l => l.level === maxLevel);
-                                    if (!level) return null;
                                     return (
                                         <>
-                                            <span className="text-xs text-yim-500 opacity-70">Risico-inzage</span>
-                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: level.color }}>{sensitivityLabels[maxLevel]}</span>
-                                            <span className="text-xs text-yim-500 opacity-70">·</span>
-                                            <span className="text-xs text-yim-600">{totalCatCount}/{totalCatMax} categorieën</span>
+                                            <span className="text-sm text-yim-600 opacity-70">Risico-inzage:</span>
+                                            {level && (
+                                                <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: level.color }}>{sensitivityLabels[maxLevel]}</span>
+                                            )}
+                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium bg-yim-100 text-yim-700 border border-yim-200">
+                                                {selectedFields}/{totalFields} velden geselecteerd
+                                            </span>
                                         </>
                                     );
                                 })()}
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={closeRoleEditor} className="px-4 py-2 text-sm text-yim-600 hover:bg-yim-100 rounded-lg transition-colors">Annuleren</button>
-                                <button onClick={saveRole} disabled={!editForm.name} className="px-5 py-2 bg-yim-500 text-white text-sm font-medium rounded-lg hover:bg-yim-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button onClick={saveRole} disabled={!editForm.name} className="ml-2 px-5 py-2 bg-yim-500 text-white text-sm font-medium rounded-lg hover:bg-yim-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                     {isNewRole ? 'Rol aanmaken' : 'Opslaan'}
                                 </button>
                             </div>
