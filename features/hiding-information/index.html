@@ -3181,7 +3181,7 @@
                                                             })()}
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className={`text-sm font-semibold ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
+                                                                    <span className={`text-base font-semibold ${isActive ? 'text-yim-700' : 'text-yim-400'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>{cat.name}</span>
                                                                     {isAllOrNothing && (
                                                                         <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control" aria-hidden="true">
                                                                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -3195,7 +3195,7 @@
                                                                     )}
                                                                 </div>
                                                                 {isDerived && reasons.length > 0 && (
-                                                                    <p className="text-[11px] text-yim-500 opacity-70 mt-0.5 truncate">
+                                                                    <p className="text-sm text-yim-500 opacity-70 mt-1 truncate leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>
                                                                         Afgeleid uit: {reasons.slice(0, 3).join(', ')}
                                                                         {reasons.length > 3 && (
                                                                             <span className="relative group inline-block ml-1">
