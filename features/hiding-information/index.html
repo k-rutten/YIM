@@ -1063,6 +1063,7 @@
             const CONCEPT_INFO = {
                 A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen' },
                 G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'De data-inzage is een afleiding van wat in de rol is geconfigureerd. Op basis van gekozen taken, processen, dossierniveau en bestandstoegang berekent het systeem direct welke gegevens een gebruiker met deze rol kan zien.', what: 'Zowel admin als gebruiker krijgt de afgeleide inzage inzichtelijk gepresenteerd — admin kan vervolgens per veld nog handmatig aan/uit zetten. Risico-balk toont gevoeligheidsniveau, overrides worden gemarkeerd.', key: 'Afleiding uit rol-config + transparantie + veld-overrides' },
+                H: { number: 4, title: 'MVP Data-inzage', color: 'bg-yim-500', how: 'Admin kiest 3 selectors bovenaan: Inzageniveau (dropdown Geen/Basis/Gevoelig/Zeer gevoelig), Dossierniveau (multi-select chips), Bestandstoegang (multi-select chips). Categorieën volgen automatisch.', what: 'Read-only categorie-accordion toont per rij X/Y velden geselecteerd. Field-chips (in expand) hebben sensitivity-dot en active/inactive state. Sticky bottom-nav toont live risico-badge + veld-count.', key: 'MVP-versie: minder controls, snellere config via 3 top-level selectors' },
             };
             const [revealedFields, setRevealedFields] = useState({});
             const [editMode, setEditMode] = useState(false);
@@ -1862,6 +1863,48 @@
             security: createGRole('Security Manager', 'Compliance en toegang', createSecurityRoleSettings, false, false),
             contractor: createGRole('Contractor', 'Beperkte toegang', createMinimalRoleSettings, false, false),
             guest: createGRole('Guest', 'Basis verificatie', createDefaultRoleSettings, false, false),
+        };
+
+        // ============ Concept H: MVP Data-inzage (Figma node 9800:3601) ============
+        // Top-down selectie: Inzageniveau + Dossierniveau + Bestandstoegang.
+        // Categorie-accordion is read-only (afgeleid uit selectors). Per-veld chip-override in expand.
+        const MVP_DOSSIER_NIVEAUS = [
+            { id: 'aanmeldingen', name: 'Aanmeldingen' },
+            { id: 'dossier_informatie', name: 'Dossier informatie' },
+            { id: 'geschiedenis', name: 'Geschiedenis' },
+        ];
+        const MVP_BESTAND_TOEGANG = [
+            { id: 'certificaten', name: 'Certificaten' },
+            { id: 'persoonlijk', name: 'Persoonlijk' },
+        ];
+        // Inzageniveau 1..4 → allowedCategories per categorie (uit CATEGORY_MIN_LEVEL mapping)
+        const deriveMVPCategories = (inzageniveau) => {
+            const result = {};
+            ALL_CATEGORY_IDS.forEach(id => {
+                const catMin = CATEGORY_MIN_LEVEL[id] || 1;
+                result[id] = catMin <= inzageniveau;
+            });
+            return result;
+        };
+        const createHRole = (name, desc, inzageniveau, canReveal) => {
+            const allowedCategories = deriveMVPCategories(inzageniveau);
+            return {
+                name, description: desc,
+                inzageniveau, // 1..4 (Geen/Basis/Gevoelig/Zeer gevoelig)
+                dossierniveau: ['aanmeldingen', 'dossier_informatie', 'geschiedenis'],
+                bestandstoegang: ['certificaten', 'persoonlijk'],
+                allowedCategories,
+                _fieldOverrides: {},
+                canReveal,
+                canEditDossier: canReveal,
+            };
+        };
+        const initialRolesH = {
+            admin: createHRole('Administrator', 'Volledige toegang', 4, true),
+            hr: createHRole('HR Manager', 'Persoons- en arbeidsgegevens', 3, true),
+            security: createHRole('Security Manager', 'Compliance en toegang', 2, false),
+            contractor: createHRole('Contractor', 'Beperkte toegang', 2, false),
+            guest: createHRole('Guest', 'Basis verificatie', 1, false),
         };
 
         // ============ Concept C: Suggest sensitivity level from derivation ============
@@ -2939,7 +2982,7 @@
                 const linkedProfile = concept === 'A' ? getProfileForRole(editForm) : null;
                 const totalCatCount = concept === 'C'
                     ? ALL_GROUPS.filter(g => g.subcatIds.some(id => isSubcatActive(id))).length
-                    : concept === 'G'
+                    : (concept === 'G' || concept === 'H')
                     ? Object.values(editForm.allowedCategories || {}).filter(Boolean).length
                     : 0;
                 const matchedPreset = concept === 'G' ? matchPreset(editForm) : null;
@@ -3409,6 +3452,158 @@
                                             );
                                         })()}
 
+                                    </div>
+                                    );
+                                })()}
+
+                                {/* ===== CONCEPT H: MVP Data-inzage paneel (Figma node 9800:3601) ===== */}
+                                {concept === 'H' && (() => {
+                                    const inzageniveau = editForm.inzageniveau || 1;
+                                    const dossierniveau = editForm.dossierniveau || [];
+                                    const bestandstoegang = editForm.bestandstoegang || [];
+                                    const fieldOverrides = editForm._fieldOverrides || {};
+                                    const derivedCats = deriveMVPCategories(inzageniveau);
+
+                                    const setInzageniveau = (lvl) => {
+                                        const newCats = deriveMVPCategories(lvl);
+                                        setEditForm(prev => ({ ...prev, inzageniveau: lvl, allowedCategories: newCats }));
+                                    };
+                                    const toggleDossier = (id) => {
+                                        setEditForm(prev => ({ ...prev, dossierniveau: (prev.dossierniveau || []).includes(id) ? prev.dossierniveau.filter(x => x !== id) : [...(prev.dossierniveau || []), id] }));
+                                    };
+                                    const toggleBestand = (id) => {
+                                        setEditForm(prev => ({ ...prev, bestandstoegang: (prev.bestandstoegang || []).includes(id) ? prev.bestandstoegang.filter(x => x !== id) : [...(prev.bestandstoegang || []), id] }));
+                                    };
+                                    const toggleFieldMVP = (catId, fieldId) => {
+                                        setEditForm(prev => {
+                                            const fo = { ...(prev._fieldOverrides || {}) };
+                                            const catFO = { ...(fo[catId] || {}) };
+                                            catFO[fieldId] = catFO[fieldId] === false ? undefined : false;
+                                            if (catFO[fieldId] === undefined) delete catFO[fieldId];
+                                            fo[catId] = catFO;
+                                            return { ...prev, _fieldOverrides: fo };
+                                        });
+                                    };
+
+                                    return (
+                                    <div className="bg-white rounded-2xl border border-yim-200 overflow-hidden mt-2">
+                                        {/* Header */}
+                                        <div className="px-4 py-5">
+                                            <h3 className="text-2xl font-bold text-yim-700 leading-8" style={{ fontFamily: 'Nunito, sans-serif' }}>Data-inzage</h3>
+                                            <p className="text-sm text-yim-600 opacity-70 mt-1 leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>Kies hier een inzageniveau dat passend is voor deze rol.</p>
+                                        </div>
+
+                                        {/* Selector rij: Inzageniveau (dropdown) */}
+                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
+                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
+                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Inzageniveau</label>
+                                                <select value={inzageniveau} onChange={(e) => setInzageniveau(parseInt(e.target.value, 10))}
+                                                    className="w-full px-3 py-2 border border-yim-200 rounded bg-white text-sm text-yim-700 focus:ring-2 focus:ring-yim-500 focus:border-yim-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                    <option value={1}>Geen inzage</option>
+                                                    <option value={2}>Basis inzage</option>
+                                                    <option value={3}>Gevoelig inzage</option>
+                                                    <option value={4}>Zeer gevoelig inzage</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Selector rij: Dossierniveau (chips) */}
+                                        <div className="border-t border-yim-200 px-4 py-4">
+                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
+                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Dossierniveau</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {MVP_DOSSIER_NIVEAUS.map(d => {
+                                                        const active = dossierniveau.includes(d.id);
+                                                        return (
+                                                            <button key={d.id} onClick={() => toggleDossier(d.id)}
+                                                                className={`h-7 px-3 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                {d.name}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Selector rij: Bestandstoegang (chips) */}
+                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
+                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
+                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Bestandstoegang</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {MVP_BESTAND_TOEGANG.map(b => {
+                                                        const active = bestandstoegang.includes(b.id);
+                                                        return (
+                                                            <button key={b.id} onClick={() => toggleBestand(b.id)}
+                                                                className={`h-7 px-3 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                {b.name}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Read-only accordion: categorieën volgen uit inzageniveau */}
+                                        <div className="border-t border-yim-200 px-4 py-4 space-y-2">
+                                            {CATEGORIES.map(cat => {
+                                                const isActive = !!derivedCats[cat.id];
+                                                const isExpanded = expandedCatId === cat.id;
+                                                const canExpand = !cat.allOrNothing;
+                                                const catFO = fieldOverrides[cat.id] || {};
+                                                const hiddenCount = Object.values(catFO).filter(v => v === false).length;
+                                                const totalFields = cat.fields.length;
+                                                const visibleCount = isActive ? (totalFields - hiddenCount) : 0;
+                                                return (
+                                                <div key={cat.id} className="rounded-lg overflow-hidden border border-yim-200 hover:border-yim-300 transition-colors bg-white">
+                                                    {/* Row = header (klikbaar) */}
+                                                    <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-50' : ''} ${canExpand && isActive ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
+                                                        onClick={() => canExpand && isActive && setExpandedCatId(prev => prev === cat.id ? null : cat.id)}>
+                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                            <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+                                                                <span className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>{cat.name}</span>
+                                                                <span className={`text-[11px] px-2 py-0.5 rounded-full border ${hiddenCount > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-yim-50 text-yim-600 border-yim-200'}`}>
+                                                                    {visibleCount}/{totalFields} velden geselecteerd
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        {canExpand && isActive && (
+                                                            <span className="p-2 text-yim-400" aria-hidden="true">
+                                                                <svg className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {/* Field chips per Figma design */}
+                                                    {isExpanded && canExpand && isActive && (
+                                                        <div className="border-t border-yim-200/60 px-4 py-3">
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {cat.fields.map(field => {
+                                                                    const hidden = catFO[field.id] === false;
+                                                                    const sensitivity = field.sensitivity || cat.sensitivity;
+                                                                    const dotColor = sensitivity === 'zeer_gevoelig' ? '#EF4444' : sensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
+                                                                    return (
+                                                                        <button key={field.id} onClick={() => toggleFieldMVP(cat.id, field.id)}
+                                                                            className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${hidden ? 'bg-white text-yim-400 border-yim-200 hover:border-yim-300' : 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'}`}
+                                                                            style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
+                                                                            title={hidden ? 'Klik om te tonen' : 'Klik om te verbergen'}>
+                                                                            {!hidden && (
+                                                                                <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                                                </svg>
+                                                                            )}
+                                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor, opacity: hidden ? 0.4 : 1 }}></span>
+                                                                            {field.name}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                     );
                                 })()}
@@ -4126,11 +4321,12 @@
             const [rolesA, setRolesA] = useState(initialRolesA);
             const [rolesC, setRolesC] = useState(initialRolesC);
             const [rolesG, setRolesG] = useState(initialRolesG);
+            const [rolesH, setRolesH] = useState(initialRolesH);
             const [visibilityProfiles, setVisibilityProfiles] = useState(initialVisibilityProfiles);
             const [currentTab, setCurrentTab] = useState('viewer');
 
-            const roles = concept === 'A' ? rolesA : concept === 'C' ? rolesC : rolesG;
-            const setRoles = concept === 'A' ? setRolesA : concept === 'C' ? setRolesC : setRolesG;
+            const roles = concept === 'A' ? rolesA : concept === 'C' ? rolesC : concept === 'H' ? rolesH : rolesG;
+            const setRoles = concept === 'A' ? setRolesA : concept === 'C' ? setRolesC : concept === 'H' ? setRolesH : setRolesG;
 
             return (
                 <div>
@@ -4146,12 +4342,16 @@
                                     <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         3: Taakafleiding
                                     </button>
+                                    <button onClick={() => setConcept('H')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'H' ? 'bg-yim-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                        4: MVP Data-inzage
+                                    </button>
                                 </div>
                             </div>
                             <p className="text-xs text-white/40">
                                 {concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
                                  : concept === 'C' ? 'Inzageniveau met suggestie · Categorieën volgen uit rolinstellingen'
                                  : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
+                                 : concept === 'H' ? 'MVP: 3 selectors (Inzageniveau/Dossierniveau/Bestandstoegang) · categorieën volgen automatisch'
                                  : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'}
                             </p>
                         </div>
