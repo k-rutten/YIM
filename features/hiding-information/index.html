@@ -3092,14 +3092,14 @@
                                             const positionPct = ((maxLevel - 1) / 3) * 100;
 
                                             return (
-                                                <div className="px-5 py-4 bg-gradient-to-br from-yim-50 to-white border-b border-yim-200">
+                                                <div className="px-5 py-4 border-b border-yim-200">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div>
                                                             <h4 className="text-lg font-bold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Risico-inzage</h4>
                                                             <p className="text-xs text-yim-600 opacity-70 mt-0.5">Gevoeligheidsniveau van actieve categorieën</p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border" style={{ color: markerColor, backgroundColor: markerColor + '10', borderColor: markerColor + '40' }}>{markerLabel}</span>
+                                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: markerColor }}>{markerLabel}</span>
                                                             <p className="text-[10px] text-yim-500 opacity-70 mt-1">{activeNames.length} {activeNames.length === 1 ? 'categorie' : 'categorieën'} actief</p>
                                                         </div>
                                                     </div>
@@ -3784,7 +3784,7 @@
                                     return (
                                         <>
                                             <span className="text-xs text-yim-500 opacity-70">Risico-inzage</span>
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border" style={{ color: level.color, backgroundColor: level.color + '10', borderColor: level.color + '40' }}>{sensitivityLabels[maxLevel]}</span>
+                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: level.color }}>{sensitivityLabels[maxLevel]}</span>
                                             <span className="text-xs text-yim-500 opacity-70">·</span>
                                             <span className="text-xs text-yim-600">{totalCatCount}/{totalCatMax} categorieën</span>
                                         </>
