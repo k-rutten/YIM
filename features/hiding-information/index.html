@@ -3065,33 +3065,9 @@
 
                                     return (
                                     <div className="bg-white rounded-xl border border-yim-200 overflow-hidden mt-2">
-                                        <div className="px-5 py-4 border-b border-yim-200">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-sm font-semibold text-yim-600">Afgeleide data-inzage</h3>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs text-yim-500 bg-yim-50 px-2 py-0.5 rounded border border-yim-200">{derivedCount} afgeleid</span>
-                                                    {overrideCount > 0 && <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{overrideCount} categorie-override</span>}
-                                                    {fieldOverrideCount > 0 && <span className="text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">{fieldOverrideCount} veld-override</span>}
-                                                </div>
-                                            </div>
+                                        <div className="px-5 py-4">
+                                            <h3 className="text-lg font-bold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Afgeleide data-inzage</h3>
                                             <p className="text-xs text-yim-600 opacity-70 mt-1 leading-relaxed">De velden worden automatisch bepaald op basis van de geconfigureerde rol maar je kan handmatig aanpassingen maken mocht dit niet toereikend zijn. Selecteer hier de categorie en/of velden die je wilt tonen/verbergen.</p>
-                                            {/* Niveau (CompanyAccessLevel) — uitleg per gekozen bereik */}
-                                            {(() => {
-                                                const lvl = editForm.roleSettings?.niveau;
-                                                const lvlNote = {
-                                                    own: 'Niveau Eigen — deze rol ziet alleen de eigen gebruiker, geen andere personen.',
-                                                    employer: 'Niveau Werkgever — deze rol ziet personen in dienst bij de eigen werkgever. Onderaannemer-personen niet.',
-                                                    employerAndSubContractors: 'Niveau Structuur — deze rol ziet personen van de eigen werkgever én van onderaannemers van die werkgever.',
-                                                    departments: 'Niveau Afdelingen — deze rol ziet personen binnen toegewezen afdelingen.',
-                                                    managerAndEmployees: 'Niveau Manager/Medewerkers — deze rol ziet directe-rapportage relaties.',
-                                                    all: 'Niveau Alles — deze rol ziet alle personen binnen de tenant, ongeacht werkgever.'
-                                                }[lvl];
-                                                return lvlNote ? (
-                                                    <div className="mt-2 px-2 py-1.5 bg-yim-50 border border-yim-200 rounded text-[11px] text-yim-700">
-                                                        <span className="font-semibold">Bereik: </span>{lvlNote}
-                                                    </div>
-                                                ) : null;
-                                            })()}
                                         </div>
 
                                         {/* ===== RISICO-BALK (uitkomst-indicator) ===== */}
@@ -3119,8 +3095,8 @@
                                                 <div className="px-5 py-4 bg-gradient-to-br from-yim-50 to-white border-b border-yim-200">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div>
-                                                            <h4 className="text-xs font-bold text-yim-600 uppercase tracking-wider">Risico-inzage</h4>
-                                                            <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">Gevoeligheidsniveau van actieve categorieën</p>
+                                                            <h4 className="text-lg font-bold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Risico-inzage</h4>
+                                                            <p className="text-xs text-yim-600 opacity-70 mt-0.5">Gevoeligheidsniveau van actieve categorieën</p>
                                                         </div>
                                                         <div className="text-right">
                                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border" style={{ color: markerColor, backgroundColor: markerColor + '10', borderColor: markerColor + '40' }}>{markerLabel}</span>
@@ -3170,7 +3146,7 @@
                                                 const visibleFieldCount = totalFields - hiddenFieldCount;
 
                                                 return (
-                                                <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isOverridden ? 'bg-amber-50/40 border-amber-300' : isActive ? 'bg-yim-50 border-yim-500/40' : 'bg-white border-yim-200'}`}>
+                                                <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isOverridden ? 'bg-amber-50/40 border-amber-300' : 'bg-white border-yim-200 hover:border-yim-300'}`}>
                                                     {/* Category row — klik op rij = expand, klik op checkbox = toggle */}
                                                     <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
                                                         onClick={() => canExpand && toggleExpand(cat.id)}>
@@ -3205,11 +3181,17 @@
                                                             })()}
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
+                                                                    <span className={`text-sm font-semibold ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
                                                                     {isAllOrNothing && (
-                                                                        <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control">
+                                                                        <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control" aria-hidden="true">
                                                                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                                                                         </svg>
+                                                                    )}
+                                                                    {/* Field-count als pill-badge inline (Figma-style) */}
+                                                                    {isActive && !isAllOrNothing && (
+                                                                        <span className={`text-[11px] px-2 py-0.5 rounded-full border ${hiddenFieldCount > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-yim-50 text-yim-600 border-yim-200'}`}>
+                                                                            {visibleFieldCount}/{totalFields} velden zichtbaar
+                                                                        </span>
                                                                     )}
                                                                 </div>
                                                                 {isDerived && reasons.length > 0 && (
@@ -3231,12 +3213,6 @@
                                                                 )}
                                                                 {!isDerived && !isOverridden && (
                                                                     <p className="text-[11px] text-yim-400 mt-0.5">Niet nodig voor huidige taken</p>
-                                                                )}
-                                                                {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
-                                                                    <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar</p>
-                                                                )}
-                                                                {isActive && hiddenFieldCount > 0 && (
-                                                                    <p className="text-[11px] text-amber-600 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar · {hiddenFieldCount} handmatig verborgen</p>
                                                                 )}
                                                             </div>
                                                         </div>
