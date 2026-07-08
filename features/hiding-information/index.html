@@ -3291,7 +3291,7 @@
                                                                         Afgeleid uit: {reasons.slice(0, 3).join(', ')}
                                                                         {reasons.length > 3 && (
                                                                             <span className="relative group inline-block ml-1">
-                                                                                <span className="text-yim-600 font-medium cursor-help underline decoration-dotted">+{reasons.length - 3}</span>
+                                                                                <span className="inline-flex items-center h-5 px-1.5 rounded-[3px] bg-yim-50 text-yim-700 text-[11px] font-semibold border border-yim-200 cursor-help">+{reasons.length - 3}</span>
                                                                                 <span className="absolute left-0 bottom-full mb-1 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-64">
                                                                                     <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
                                                                                         <span className="font-semibold block mb-1">Meer afleidingen ({reasons.length - 3}):</span>
@@ -3377,11 +3377,6 @@
                                                                             className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                             style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
                                                                             title={titleText}>
-                                                                            {showCheck && (
-                                                                                <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                                                </svg>
-                                                                            )}
                                                                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
                                                                             {field.name}
                                                                         </button>
@@ -3474,17 +3469,6 @@
                                     const toggleBestand = (id) => {
                                         setEditForm(prev => ({ ...prev, bestandstoegang: (prev.bestandstoegang || []).includes(id) ? prev.bestandstoegang.filter(x => x !== id) : [...(prev.bestandstoegang || []), id] }));
                                     };
-                                    const toggleFieldMVP = (catId, fieldId) => {
-                                        setEditForm(prev => {
-                                            const fo = { ...(prev._fieldOverrides || {}) };
-                                            const catFO = { ...(fo[catId] || {}) };
-                                            catFO[fieldId] = catFO[fieldId] === false ? undefined : false;
-                                            if (catFO[fieldId] === undefined) delete catFO[fieldId];
-                                            fo[catId] = catFO;
-                                            return { ...prev, _fieldOverrides: fo };
-                                        });
-                                    };
-
                                     return (
                                     <div className="bg-white rounded-2xl border border-yim-200 overflow-hidden mt-2">
                                         {/* Header */}
@@ -3516,7 +3500,7 @@
                                                         const active = dossierniveau.includes(d.id);
                                                         return (
                                                             <button key={d.id} onClick={() => toggleDossier(d.id)}
-                                                                className={`h-7 px-3 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                className={`h-7 px-3 rounded-[4px] text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
                                                                 {d.name}
                                                             </button>
                                                         );
@@ -3534,7 +3518,7 @@
                                                         const active = bestandstoegang.includes(b.id);
                                                         return (
                                                             <button key={b.id} onClick={() => toggleBestand(b.id)}
-                                                                className={`h-7 px-3 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                className={`h-7 px-3 rounded-[4px] text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
                                                                 {b.name}
                                                             </button>
                                                         );
@@ -3583,18 +3567,12 @@
                                                                     const sensitivity = field.sensitivity || cat.sensitivity;
                                                                     const dotColor = sensitivity === 'zeer_gevoelig' ? '#EF4444' : sensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
                                                                     return (
-                                                                        <button key={field.id} onClick={() => toggleFieldMVP(cat.id, field.id)}
-                                                                            className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${hidden ? 'bg-white text-yim-400 border-yim-200 hover:border-yim-300' : 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'}`}
-                                                                            style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
-                                                                            title={hidden ? 'Klik om te tonen' : 'Klik om te verbergen'}>
-                                                                            {!hidden && (
-                                                                                <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                                                </svg>
-                                                                            )}
-                                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor, opacity: hidden ? 0.4 : 1 }}></span>
+                                                                        <span key={field.id}
+                                                                            className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold border bg-yim-50 text-yim-700 border-yim-500"
+                                                                            style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
+                                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
                                                                             {field.name}
-                                                                        </button>
+                                                                        </span>
                                                                     );
                                                                 })}
                                                             </div>
