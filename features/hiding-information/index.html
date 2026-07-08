@@ -3338,9 +3338,9 @@
                                                                     const isLocked = field.policyLocked === true;
                                                                     const showCheck = isActive && !fieldHidden && !isLocked;
                                                                     const chipClass = isLocked
-                                                                        ? 'bg-yim-100/60 text-yim-400 border-yim-300 cursor-not-allowed'
+                                                                        ? 'bg-white text-yim-400 border-yim-300 cursor-not-allowed'
                                                                         : showCheck
-                                                                            ? 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
+                                                                            ? 'bg-white text-yim-700 border-yim-500 hover:bg-yim-50'
                                                                             : 'bg-white text-yim-400 border-yim-200 hover:border-yim-500';
                                                                     const titleText = isLocked
                                                                         ? (field.policyReason || 'Door policy uitgeschakeld — niet wijzigbaar')
@@ -3351,7 +3351,7 @@
                                                                         return (
                                                                             <span key={field.id} className="relative group inline-flex">
                                                                                 <button disabled
-                                                                                    className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                                    className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                                     style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
                                                                                     <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                                                         <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -3374,7 +3374,7 @@
                                                                     }
                                                                     return (
                                                                         <button key={field.id} onClick={() => toggleField(cat.id, field.id)}
-                                                                            className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                            className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                             style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
                                                                             title={titleText}>
                                                                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
@@ -3568,7 +3568,7 @@
                                                                     const dotColor = sensitivity === 'zeer_gevoelig' ? '#EF4444' : sensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
                                                                     return (
                                                                         <span key={field.id}
-                                                                            className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold border bg-yim-50 text-yim-700 border-yim-500"
+                                                                            className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full text-[13px] font-semibold border bg-white text-yim-700 border-yim-500"
                                                                             style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
                                                                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
                                                                             {field.name}
