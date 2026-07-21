@@ -1063,6 +1063,7 @@
             const CONCEPT_INFO = {
                 A: { number: 1, title: 'Profielen', color: 'bg-yim-orange', how: 'Admin maakt profielen aan (bijv. "Standaard inzage") en koppelt die aan rollen.', what: 'Profiel wijzigen → alle gekoppelde rollen veranderen mee. Bevestiging vereist bij elke wijziging.', key: 'Centraal beheer via herbruikbare profielen' },
                 G: { number: 3, title: 'Taakafleiding', color: 'bg-teal-500', how: 'De data-inzage is een afleiding van wat in de rol is geconfigureerd. Op basis van gekozen taken, processen, dossierniveau en bestandstoegang berekent het systeem direct welke gegevens een gebruiker met deze rol kan zien.', what: 'Zowel admin als gebruiker krijgt de afgeleide inzage inzichtelijk gepresenteerd — admin kan vervolgens per veld nog handmatig aan/uit zetten. Risico-balk toont gevoeligheidsniveau, overrides worden gemarkeerd.', key: 'Afleiding uit rol-config + transparantie + veld-overrides' },
+                H: { number: 4, title: 'MVP Data-inzage', color: 'bg-yim-500', how: 'Admin kiest 3 selectors bovenaan: Inzageniveau (dropdown Geen/Basis/Gevoelig/Zeer gevoelig), Dossierniveau (multi-select chips), Bestandstoegang (multi-select chips). Categorieën volgen automatisch.', what: 'Read-only categorie-accordion toont per rij X/Y velden geselecteerd. Field-chips (in expand) hebben sensitivity-dot en active/inactive state. Sticky bottom-nav toont live risico-badge + veld-count.', key: 'MVP-versie: minder controls, snellere config via 3 top-level selectors' },
             };
             const [revealedFields, setRevealedFields] = useState({});
             const [editMode, setEditMode] = useState(false);
@@ -1862,6 +1863,119 @@
             security: createGRole('Security Manager', 'Compliance en toegang', createSecurityRoleSettings, false, false),
             contractor: createGRole('Contractor', 'Beperkte toegang', createMinimalRoleSettings, false, false),
             guest: createGRole('Guest', 'Basis verificatie', createDefaultRoleSettings, false, false),
+        };
+
+        // ============ Concept H: MVP Data-inzage (Figma node 9880:1180) ============
+        // Top-down selectie: Dossierniveau + Bestandstoegang + Data-inzageniveau.
+        // Categorie-accordion is read-only (afgeleid uit inzageniveau).
+        const MVP_DOSSIER_NIVEAUS = [
+            { id: 'aanmeldingen', name: 'Aanmeldingen' },
+            { id: 'dossier_informatie', name: 'Dossier informatie' },
+            { id: 'geschiedenis', name: 'Geschiedenis' },
+        ];
+        const MVP_BESTAND_TOEGANG = [
+            { id: 'certificaten', name: 'Certificaten' },
+            { id: 'persoonlijk', name: 'Persoonlijk' },
+        ];
+        // Figma 9880-1180: 8 categorieën met eigen field-sets. sensitivity: basis|gevoelig|zeer_gevoelig
+        const MVP_CATEGORIES = [
+            { id: 'identity', name: 'Identiteit',
+              fields: [
+                { id: 'first_name', name: 'Voornaam', sensitivity: 'basis' },
+                { id: 'initials', name: 'Initialen', sensitivity: 'basis' },
+                { id: 'last_name_prefix', name: 'Tussenvoegsel', sensitivity: 'basis' },
+                { id: 'last_name', name: 'Achternaam', sensitivity: 'basis' },
+                { id: 'date_of_birth', name: 'Geboortedatum', sensitivity: 'basis' },
+                { id: 'photo', name: 'Pasfoto', sensitivity: 'basis' },
+                { id: 'nationality', name: 'Nationaliteit', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'contact', name: 'Contact',
+              fields: [
+                { id: 'email', name: 'E-mailadres', sensitivity: 'basis' },
+                { id: 'phone', name: 'Telefoonnummer', sensitivity: 'basis' },
+                { id: 'language', name: 'Taal', sensitivity: 'basis' },
+                { id: 'locality', name: 'Plaats', sensitivity: 'gevoelig' },
+                { id: 'country_of_residence', name: 'Land van vestiging', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'government_id', name: 'Overheids-ID',
+              fields: [
+                { id: 'id_type', name: 'Type ID Bewijs', sensitivity: 'zeer_gevoelig' },
+                { id: 'id_number', name: 'Documentnummer identiteitsbewijs', sensitivity: 'zeer_gevoelig' },
+                { id: 'id_validity', name: 'Geldigheidsdatum', sensitivity: 'zeer_gevoelig' },
+                { id: 'bsn', name: 'BSN / EU persoonsnummer', sensitivity: 'zeer_gevoelig' },
+                { id: 'vog', name: 'VOG', sensitivity: 'zeer_gevoelig' },
+              ]},
+            { id: 'employment', name: 'Arbeidsrelatie',
+              fields: [
+                { id: 'main_contractor', name: 'Hoofdaannemer', sensitivity: 'gevoelig' },
+                { id: 'employer', name: 'Werkgever', sensitivity: 'gevoelig' },
+                { id: 'kvk_numbers', name: 'KVK-nummers', sensitivity: 'gevoelig' },
+                { id: 'job_functions', name: 'Functies', sensitivity: 'gevoelig' },
+                { id: 'contract_period', name: 'Inhuur-/Contractperiode', sensitivity: 'gevoelig' },
+                { id: 'contact_person', name: 'Werkgever-contactpersoon', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'social_costs', name: 'Sociale lasten',
+              fields: [
+                { id: 'work_50pct', name: 'Werkzaamheden 50%+', sensitivity: 'zeer_gevoelig' },
+                { id: 'purchase_agreement', name: 'Koopovereenkomst', sensitivity: 'zeer_gevoelig' },
+                { id: 'limosa', name: 'Limosa aangifte', sensitivity: 'zeer_gevoelig' },
+                { id: 'posted_workers', name: 'Posted Workers meldloket', sensitivity: 'zeer_gevoelig' },
+                { id: 'nl_social', name: 'Sociaal verzekerd NL', sensitivity: 'zeer_gevoelig' },
+                { id: 'a1_e101', name: 'A1/E101 document', sensitivity: 'zeer_gevoelig' },
+              ]},
+            { id: 'compliance', name: 'Compliance & Instructies',
+              fields: [
+                { id: 'vca_exemption', name: 'VCA-vrijstelling', sensitivity: 'basis' },
+                { id: 'company_rules', name: 'Bedrijfsspecifieke regels', sensitivity: 'basis' },
+                { id: 'deltalinqs', name: 'Deltalinqs poortinstructies', sensitivity: 'basis' },
+                { id: 'h2s', name: 'H2S instructies', sensitivity: 'basis' },
+              ]},
+            { id: 'certificates', name: 'Certificaten',
+              fields: [
+                { id: 'vca_certificate', name: 'VCA-certificaat', sensitivity: 'basis' },
+                { id: 'bhv_certificate', name: 'BHV-certificaat', sensitivity: 'gevoelig' },
+                { id: 'work_permit', name: 'Werkvergunning', sensitivity: 'gevoelig' },
+                { id: 'drivers_license', name: 'Rijbewijs', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'access', name: 'Toegang & Voertuig',
+              fields: [
+                { id: 'license_plate', name: 'Kenteken', sensitivity: 'gevoelig' },
+                { id: 'country_code', name: 'Landcode', sensitivity: 'gevoelig' },
+                { id: 'assigned_authz', name: 'Toegewezen autorisaties', sensitivity: 'gevoelig' },
+              ]},
+        ];
+        // Data-inzageniveau 1..4 → activeert categorieën met min-level ≤ selection
+        const MVP_CATEGORY_MIN_LEVEL = {
+            identity: 1, contact: 2, government_id: 4, employment: 3,
+            social_costs: 4, compliance: 2, certificates: 2, access: 3,
+        };
+        const deriveMVPCategories = (inzageniveau) => {
+            const result = {};
+            MVP_CATEGORIES.forEach(cat => {
+                const catMin = MVP_CATEGORY_MIN_LEVEL[cat.id] || 1;
+                result[cat.id] = catMin <= inzageniveau;
+            });
+            return result;
+        };
+        const createHRole = (name, desc, inzageniveau, canReveal) => {
+            const allowedCategories = deriveMVPCategories(inzageniveau);
+            return {
+                name, description: desc,
+                inzageniveau, // 1..4 (Geen/Basis/Gevoelig/Zeer gevoelig)
+                dossierniveau: ['aanmeldingen', 'dossier_informatie', 'geschiedenis'],
+                bestandstoegang: ['certificaten', 'persoonlijk'],
+                allowedCategories,
+                _fieldOverrides: {},
+                canReveal,
+                canEditDossier: canReveal,
+            };
+        };
+        const initialRolesH = {
+            admin: createHRole('Administrator', 'Volledige toegang', 4, true),
+            hr: createHRole('HR Manager', 'Persoons- en arbeidsgegevens', 3, true),
+            security: createHRole('Security Manager', 'Compliance en toegang', 2, false),
+            contractor: createHRole('Contractor', 'Beperkte toegang', 2, false),
+            guest: createHRole('Guest', 'Basis verificatie', 1, false),
         };
 
         // ============ Concept C: Suggest sensitivity level from derivation ============
@@ -2933,13 +3047,13 @@
             // Wizard dead code removed — F uses same role editor as B
 
             // Defined outside if(selectedRole) to avoid Babel eval scope issues
-            const totalCatMax = concept === 'C' ? ALL_GROUPS.length : ALL_CATEGORY_IDS.length;
+            const totalCatMax = concept === 'C' ? ALL_GROUPS.length : concept === 'H' ? MVP_CATEGORIES.length : ALL_CATEGORY_IDS.length;
 
             if (selectedRole) {
                 const linkedProfile = concept === 'A' ? getProfileForRole(editForm) : null;
                 const totalCatCount = concept === 'C'
                     ? ALL_GROUPS.filter(g => g.subcatIds.some(id => isSubcatActive(id))).length
-                    : concept === 'G'
+                    : (concept === 'G' || concept === 'H')
                     ? Object.values(editForm.allowedCategories || {}).filter(Boolean).length
                     : 0;
                 const matchedPreset = concept === 'G' ? matchPreset(editForm) : null;
@@ -3248,7 +3362,7 @@
                                                                         Afgeleid uit: {reasons.slice(0, 3).join(', ')}
                                                                         {reasons.length > 3 && (
                                                                             <span className="relative group inline-block ml-1">
-                                                                                <span className="text-yim-600 font-medium cursor-help underline decoration-dotted">+{reasons.length - 3}</span>
+                                                                                <span className="inline-flex items-center h-5 px-1.5 rounded-[3px] bg-yim-50 text-yim-700 text-[11px] font-semibold border border-yim-200 cursor-help">+{reasons.length - 3}</span>
                                                                                 <span className="absolute left-0 bottom-full mb-1 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-64">
                                                                                     <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
                                                                                         <span className="font-semibold block mb-1">Meer afleidingen ({reasons.length - 3}):</span>
@@ -3295,10 +3409,10 @@
                                                                     const isLocked = field.policyLocked === true;
                                                                     const showCheck = isActive && !fieldHidden && !isLocked;
                                                                     const chipClass = isLocked
-                                                                        ? 'bg-yim-100/60 text-yim-400 border-yim-300 cursor-not-allowed'
+                                                                        ? 'bg-white text-yim-400 border-yim-300 cursor-not-allowed'
                                                                         : showCheck
-                                                                            ? 'bg-yim-50 text-yim-700 border-yim-500 hover:bg-yim-100'
-                                                                            : 'bg-white text-yim-400 border-yim-200 hover:border-yim-500';
+                                                                            ? 'bg-yim-500 text-white border-yim-500 hover:bg-yim-600'
+                                                                            : 'bg-white text-yim-700 border-yim-500 hover:bg-yim-50';
                                                                     const titleText = isLocked
                                                                         ? (field.policyReason || 'Door policy uitgeschakeld — niet wijzigbaar')
                                                                         : !isActive
@@ -3308,7 +3422,7 @@
                                                                         return (
                                                                             <span key={field.id} className="relative group inline-flex">
                                                                                 <button disabled
-                                                                                    className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                                    className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                                     style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
                                                                                     <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                                                         <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -3331,14 +3445,9 @@
                                                                     }
                                                                     return (
                                                                         <button key={field.id} onClick={() => toggleField(cat.id, field.id)}
-                                                                            className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                            className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                             style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
                                                                             title={titleText}>
-                                                                            {showCheck && (
-                                                                                <svg className="w-3.5 h-3.5 text-yim-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                                                </svg>
-                                                                            )}
                                                                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
                                                                             {field.name}
                                                                         </button>
@@ -3409,6 +3518,139 @@
                                             );
                                         })()}
 
+                                    </div>
+                                    );
+                                })()}
+
+                                {/* ===== CONCEPT H: MVP Data-inzage paneel (Figma node 9800:3601) ===== */}
+                                {concept === 'H' && (() => {
+                                    const inzageniveau = editForm.inzageniveau || 1;
+                                    const dossierniveau = editForm.dossierniveau || [];
+                                    const bestandstoegang = editForm.bestandstoegang || [];
+                                    const fieldOverrides = editForm._fieldOverrides || {};
+                                    const derivedCats = deriveMVPCategories(inzageniveau);
+
+                                    const setInzageniveau = (lvl) => {
+                                        const newCats = deriveMVPCategories(lvl);
+                                        setEditForm(prev => ({ ...prev, inzageniveau: lvl, allowedCategories: newCats }));
+                                    };
+                                    const toggleDossier = (id) => {
+                                        setEditForm(prev => ({ ...prev, dossierniveau: (prev.dossierniveau || []).includes(id) ? prev.dossierniveau.filter(x => x !== id) : [...(prev.dossierniveau || []), id] }));
+                                    };
+                                    const toggleBestand = (id) => {
+                                        setEditForm(prev => ({ ...prev, bestandstoegang: (prev.bestandstoegang || []).includes(id) ? prev.bestandstoegang.filter(x => x !== id) : [...(prev.bestandstoegang || []), id] }));
+                                    };
+                                    return (
+                                    <div className="bg-white rounded-2xl border border-yim-200 overflow-hidden mt-2">
+                                        {/* Header */}
+                                        <div className="px-4 py-5">
+                                            <h3 className="text-2xl font-bold text-yim-700 leading-8" style={{ fontFamily: 'Nunito, sans-serif' }}>Data-inzage</h3>
+                                            <p className="text-sm text-yim-600 opacity-70 mt-1 leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>Kies hier een inzageniveau dat passend is voor deze rol.</p>
+                                        </div>
+
+                                        {/* Selector rij: Dossierniveau (chips) */}
+                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
+                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
+                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Dossierniveau</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {MVP_DOSSIER_NIVEAUS.map(d => {
+                                                        const active = dossierniveau.includes(d.id);
+                                                        return (
+                                                            <button key={d.id} onClick={() => toggleDossier(d.id)}
+                                                                className={`h-7 px-3 rounded-[4px] text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                {d.name}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Selector rij: Bestandstoegang (chips) */}
+                                        <div className="border-t border-yim-200 px-4 py-4">
+                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
+                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Bestandstoegang</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {MVP_BESTAND_TOEGANG.map(b => {
+                                                        const active = bestandstoegang.includes(b.id);
+                                                        return (
+                                                            <button key={b.id} onClick={() => toggleBestand(b.id)}
+                                                                className={`h-7 px-3 rounded-[4px] text-xs font-semibold border transition-colors ${active ? 'bg-yim-50 text-yim-700 border-yim-500' : 'bg-white text-yim-500 border-yim-200 hover:border-yim-300'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                {b.name}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Selector rij: Data-inzageniveau (dropdown) */}
+                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
+                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
+                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Data-inzageniveau</label>
+                                                <select value={inzageniveau} onChange={(e) => setInzageniveau(parseInt(e.target.value, 10))}
+                                                    className="w-full px-3 py-2 border border-yim-200 rounded bg-white text-sm text-yim-700 focus:ring-2 focus:ring-yim-500 focus:border-yim-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                    <option value={1}>Basis inzage</option>
+                                                    <option value={2}>Standaard inzage</option>
+                                                    <option value={3}>Uitgebreide inzage</option>
+                                                    <option value={4}>Volledige inzage</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Read-only accordion: categorieën volgen uit inzageniveau */}
+                                        <div className="border-t border-yim-200 px-4 py-4 space-y-2">
+                                            {MVP_CATEGORIES.map(cat => {
+                                                const isActive = !!derivedCats[cat.id];
+                                                const isExpanded = expandedCatId === cat.id;
+                                                const catFO = fieldOverrides[cat.id] || {};
+                                                const hiddenCount = Object.values(catFO).filter(v => v === false).length;
+                                                const totalFields = cat.fields.length;
+                                                const visibleCount = isActive ? (totalFields - hiddenCount) : 0;
+                                                return (
+                                                <div key={cat.id} className="rounded-lg overflow-hidden border border-yim-200 hover:border-yim-300 transition-colors bg-white">
+                                                    {/* Row = header (klikbaar) */}
+                                                    <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-50' : ''} ${isActive ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
+                                                        onClick={() => isActive && setExpandedCatId(prev => prev === cat.id ? null : cat.id)}>
+                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                            <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+                                                                <span className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>{cat.name}</span>
+                                                                <span className="text-[11px] px-2 py-0.5 rounded-full border bg-yim-50 text-yim-600 border-yim-200">
+                                                                    {visibleCount}/{totalFields} velden inzichtelijk
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        {isActive && (
+                                                            <span className="p-2 text-yim-400" aria-hidden="true">
+                                                                <svg className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {/* Field badges (non-interactief) */}
+                                                    {isExpanded && isActive && (
+                                                        <div className="border-t border-yim-200/60 px-4 py-3">
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {cat.fields.map(field => {
+                                                                    const sensitivity = field.sensitivity || 'basis';
+                                                                    const dotColor = sensitivity === 'zeer_gevoelig' ? '#EF4444' : sensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
+                                                                    return (
+                                                                        <span key={field.id}
+                                                                            className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full text-[13px] font-semibold border bg-white text-yim-700 border-yim-500"
+                                                                            style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
+                                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
+                                                                            {field.name}
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                     );
                                 })()}
@@ -3829,14 +4071,20 @@
                                     let totalFields = 0;
                                     let selectedFields = 0;
                                     const fieldOverrides = editForm._fieldOverrides || {};
-                                    CATEGORIES.forEach(cat => {
+                                    const catSource = concept === 'H' ? MVP_CATEGORIES : CATEGORIES;
+                                    catSource.forEach(cat => {
                                         totalFields += cat.fields.length;
                                         if (!effectiveCats[cat.id]) return; // categorie uit → geen veld geselecteerd
                                         const catFO = fieldOverrides[cat.id] || {};
                                         const hidden = Object.values(catFO).filter(v => v === false).length;
                                         selectedFields += (cat.fields.length - hidden);
-                                        const lvl = sensitivityToLevel[cat.sensitivity] || 1;
-                                        if (lvl > maxLevel) maxLevel = lvl;
+                                        if (concept === 'H') {
+                                            const catMin = MVP_CATEGORY_MIN_LEVEL[cat.id] || 1;
+                                            if (catMin > maxLevel) maxLevel = catMin;
+                                        } else {
+                                            const lvl = sensitivityToLevel[cat.sensitivity] || 1;
+                                            if (lvl > maxLevel) maxLevel = lvl;
+                                        }
                                     });
                                     const level = SENSITIVITY_LEVELS.find(l => l.level === maxLevel);
                                     return (
@@ -4126,11 +4374,12 @@
             const [rolesA, setRolesA] = useState(initialRolesA);
             const [rolesC, setRolesC] = useState(initialRolesC);
             const [rolesG, setRolesG] = useState(initialRolesG);
+            const [rolesH, setRolesH] = useState(initialRolesH);
             const [visibilityProfiles, setVisibilityProfiles] = useState(initialVisibilityProfiles);
             const [currentTab, setCurrentTab] = useState('viewer');
 
-            const roles = concept === 'A' ? rolesA : concept === 'C' ? rolesC : rolesG;
-            const setRoles = concept === 'A' ? setRolesA : concept === 'C' ? setRolesC : setRolesG;
+            const roles = concept === 'A' ? rolesA : concept === 'C' ? rolesC : concept === 'H' ? rolesH : rolesG;
+            const setRoles = concept === 'A' ? setRolesA : concept === 'C' ? setRolesC : concept === 'H' ? setRolesH : setRolesG;
 
             return (
                 <div>
@@ -4146,12 +4395,16 @@
                                     <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                                         3: Taakafleiding
                                     </button>
+                                    <button onClick={() => setConcept('H')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'H' ? 'bg-yim-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                        4: MVP Data-inzage
+                                    </button>
                                 </div>
                             </div>
                             <p className="text-xs text-white/40">
                                 {concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
                                  : concept === 'C' ? 'Inzageniveau met suggestie · Categorieën volgen uit rolinstellingen'
                                  : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
+                                 : concept === 'H' ? 'MVP: 3 selectors (Inzageniveau/Dossierniveau/Bestandstoegang) · categorieën volgen automatisch'
                                  : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'}
                             </p>
                         </div>
