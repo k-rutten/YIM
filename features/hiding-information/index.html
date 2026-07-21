@@ -1865,9 +1865,9 @@
             guest: createGRole('Guest', 'Basis verificatie', createDefaultRoleSettings, false, false),
         };
 
-        // ============ Concept H: MVP Data-inzage (Figma node 9800:3601) ============
-        // Top-down selectie: Inzageniveau + Dossierniveau + Bestandstoegang.
-        // Categorie-accordion is read-only (afgeleid uit selectors). Per-veld chip-override in expand.
+        // ============ Concept H: MVP Data-inzage (Figma node 9880:1180) ============
+        // Top-down selectie: Dossierniveau + Bestandstoegang + Data-inzageniveau.
+        // Categorie-accordion is read-only (afgeleid uit inzageniveau).
         const MVP_DOSSIER_NIVEAUS = [
             { id: 'aanmeldingen', name: 'Aanmeldingen' },
             { id: 'dossier_informatie', name: 'Dossier informatie' },
@@ -1877,12 +1877,83 @@
             { id: 'certificaten', name: 'Certificaten' },
             { id: 'persoonlijk', name: 'Persoonlijk' },
         ];
-        // Inzageniveau 1..4 → allowedCategories per categorie (uit CATEGORY_MIN_LEVEL mapping)
+        // Figma 9880-1180: 8 categorieën met eigen field-sets. sensitivity: basis|gevoelig|zeer_gevoelig
+        const MVP_CATEGORIES = [
+            { id: 'identity', name: 'Identiteit',
+              fields: [
+                { id: 'first_name', name: 'Voornaam', sensitivity: 'basis' },
+                { id: 'initials', name: 'Initialen', sensitivity: 'basis' },
+                { id: 'last_name_prefix', name: 'Tussenvoegsel', sensitivity: 'basis' },
+                { id: 'last_name', name: 'Achternaam', sensitivity: 'basis' },
+                { id: 'date_of_birth', name: 'Geboortedatum', sensitivity: 'basis' },
+                { id: 'photo', name: 'Pasfoto', sensitivity: 'basis' },
+                { id: 'nationality', name: 'Nationaliteit', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'contact', name: 'Contact',
+              fields: [
+                { id: 'email', name: 'E-mailadres', sensitivity: 'basis' },
+                { id: 'phone', name: 'Telefoonnummer', sensitivity: 'basis' },
+                { id: 'language', name: 'Taal', sensitivity: 'basis' },
+                { id: 'locality', name: 'Plaats', sensitivity: 'gevoelig' },
+                { id: 'country_of_residence', name: 'Land van vestiging', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'government_id', name: 'Overheids-ID',
+              fields: [
+                { id: 'id_type', name: 'Type ID Bewijs', sensitivity: 'zeer_gevoelig' },
+                { id: 'id_number', name: 'Documentnummer identiteitsbewijs', sensitivity: 'zeer_gevoelig' },
+                { id: 'id_validity', name: 'Geldigheidsdatum', sensitivity: 'zeer_gevoelig' },
+                { id: 'bsn', name: 'BSN / EU persoonsnummer', sensitivity: 'zeer_gevoelig' },
+                { id: 'vog', name: 'VOG', sensitivity: 'zeer_gevoelig' },
+              ]},
+            { id: 'employment', name: 'Arbeidsrelatie',
+              fields: [
+                { id: 'main_contractor', name: 'Hoofdaannemer', sensitivity: 'gevoelig' },
+                { id: 'employer', name: 'Werkgever', sensitivity: 'gevoelig' },
+                { id: 'kvk_numbers', name: 'KVK-nummers', sensitivity: 'gevoelig' },
+                { id: 'job_functions', name: 'Functies', sensitivity: 'gevoelig' },
+                { id: 'contract_period', name: 'Inhuur-/Contractperiode', sensitivity: 'gevoelig' },
+                { id: 'contact_person', name: 'Werkgever-contactpersoon', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'social_costs', name: 'Sociale lasten',
+              fields: [
+                { id: 'work_50pct', name: 'Werkzaamheden 50%+', sensitivity: 'zeer_gevoelig' },
+                { id: 'purchase_agreement', name: 'Koopovereenkomst', sensitivity: 'zeer_gevoelig' },
+                { id: 'limosa', name: 'Limosa aangifte', sensitivity: 'zeer_gevoelig' },
+                { id: 'posted_workers', name: 'Posted Workers meldloket', sensitivity: 'zeer_gevoelig' },
+                { id: 'nl_social', name: 'Sociaal verzekerd NL', sensitivity: 'zeer_gevoelig' },
+                { id: 'a1_e101', name: 'A1/E101 document', sensitivity: 'zeer_gevoelig' },
+              ]},
+            { id: 'compliance', name: 'Compliance & Instructies',
+              fields: [
+                { id: 'vca_exemption', name: 'VCA-vrijstelling', sensitivity: 'basis' },
+                { id: 'company_rules', name: 'Bedrijfsspecifieke regels', sensitivity: 'basis' },
+                { id: 'deltalinqs', name: 'Deltalinqs poortinstructies', sensitivity: 'basis' },
+                { id: 'h2s', name: 'H2S instructies', sensitivity: 'basis' },
+              ]},
+            { id: 'certificates', name: 'Certificaten',
+              fields: [
+                { id: 'vca_certificate', name: 'VCA-certificaat', sensitivity: 'basis' },
+                { id: 'bhv_certificate', name: 'BHV-certificaat', sensitivity: 'gevoelig' },
+                { id: 'work_permit', name: 'Werkvergunning', sensitivity: 'gevoelig' },
+                { id: 'drivers_license', name: 'Rijbewijs', sensitivity: 'gevoelig' },
+              ]},
+            { id: 'access', name: 'Toegang & Voertuig',
+              fields: [
+                { id: 'license_plate', name: 'Kenteken', sensitivity: 'gevoelig' },
+                { id: 'country_code', name: 'Landcode', sensitivity: 'gevoelig' },
+                { id: 'assigned_authz', name: 'Toegewezen autorisaties', sensitivity: 'gevoelig' },
+              ]},
+        ];
+        // Data-inzageniveau 1..4 → activeert categorieën met min-level ≤ selection
+        const MVP_CATEGORY_MIN_LEVEL = {
+            identity: 1, contact: 2, government_id: 4, employment: 3,
+            social_costs: 4, compliance: 2, certificates: 2, access: 3,
+        };
         const deriveMVPCategories = (inzageniveau) => {
             const result = {};
-            ALL_CATEGORY_IDS.forEach(id => {
-                const catMin = CATEGORY_MIN_LEVEL[id] || 1;
-                result[id] = catMin <= inzageniveau;
+            MVP_CATEGORIES.forEach(cat => {
+                const catMin = MVP_CATEGORY_MIN_LEVEL[cat.id] || 1;
+                result[cat.id] = catMin <= inzageniveau;
             });
             return result;
         };
@@ -2976,7 +3047,7 @@
             // Wizard dead code removed — F uses same role editor as B
 
             // Defined outside if(selectedRole) to avoid Babel eval scope issues
-            const totalCatMax = concept === 'C' ? ALL_GROUPS.length : ALL_CATEGORY_IDS.length;
+            const totalCatMax = concept === 'C' ? ALL_GROUPS.length : concept === 'H' ? MVP_CATEGORIES.length : ALL_CATEGORY_IDS.length;
 
             if (selectedRole) {
                 const linkedProfile = concept === 'A' ? getProfileForRole(editForm) : null;
@@ -3477,22 +3548,8 @@
                                             <p className="text-sm text-yim-600 opacity-70 mt-1 leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>Kies hier een inzageniveau dat passend is voor deze rol.</p>
                                         </div>
 
-                                        {/* Selector rij: Inzageniveau (dropdown) */}
-                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
-                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
-                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Inzageniveau</label>
-                                                <select value={inzageniveau} onChange={(e) => setInzageniveau(parseInt(e.target.value, 10))}
-                                                    className="w-full px-3 py-2 border border-yim-200 rounded bg-white text-sm text-yim-700 focus:ring-2 focus:ring-yim-500 focus:border-yim-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
-                                                    <option value={1}>Geen inzage</option>
-                                                    <option value={2}>Basis inzage</option>
-                                                    <option value={3}>Gevoelig inzage</option>
-                                                    <option value={4}>Zeer gevoelig inzage</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
                                         {/* Selector rij: Dossierniveau (chips) */}
-                                        <div className="border-t border-yim-200 px-4 py-4">
+                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
                                             <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
                                                 <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Dossierniveau</label>
                                                 <div className="flex flex-wrap gap-2">
@@ -3510,7 +3567,7 @@
                                         </div>
 
                                         {/* Selector rij: Bestandstoegang (chips) */}
-                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
+                                        <div className="border-t border-yim-200 px-4 py-4">
                                             <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
                                                 <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Bestandstoegang</label>
                                                 <div className="flex flex-wrap gap-2">
@@ -3527,12 +3584,25 @@
                                             </div>
                                         </div>
 
+                                        {/* Selector rij: Data-inzageniveau (dropdown) */}
+                                        <div className="border-t border-yim-200 px-4 py-4 bg-yim-50/40">
+                                            <div className="grid items-center" style={{ gridTemplateColumns: '240px 1fr' }}>
+                                                <label className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Data-inzageniveau</label>
+                                                <select value={inzageniveau} onChange={(e) => setInzageniveau(parseInt(e.target.value, 10))}
+                                                    className="w-full px-3 py-2 border border-yim-200 rounded bg-white text-sm text-yim-700 focus:ring-2 focus:ring-yim-500 focus:border-yim-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                    <option value={1}>Basis inzage</option>
+                                                    <option value={2}>Standaard inzage</option>
+                                                    <option value={3}>Uitgebreide inzage</option>
+                                                    <option value={4}>Volledige inzage</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         {/* Read-only accordion: categorieën volgen uit inzageniveau */}
                                         <div className="border-t border-yim-200 px-4 py-4 space-y-2">
-                                            {CATEGORIES.map(cat => {
+                                            {MVP_CATEGORIES.map(cat => {
                                                 const isActive = !!derivedCats[cat.id];
                                                 const isExpanded = expandedCatId === cat.id;
-                                                const canExpand = !cat.allOrNothing;
                                                 const catFO = fieldOverrides[cat.id] || {};
                                                 const hiddenCount = Object.values(catFO).filter(v => v === false).length;
                                                 const totalFields = cat.fields.length;
@@ -3540,17 +3610,17 @@
                                                 return (
                                                 <div key={cat.id} className="rounded-lg overflow-hidden border border-yim-200 hover:border-yim-300 transition-colors bg-white">
                                                     {/* Row = header (klikbaar) */}
-                                                    <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-50' : ''} ${canExpand && isActive ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
-                                                        onClick={() => canExpand && isActive && setExpandedCatId(prev => prev === cat.id ? null : cat.id)}>
+                                                    <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-50' : ''} ${isActive ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
+                                                        onClick={() => isActive && setExpandedCatId(prev => prev === cat.id ? null : cat.id)}>
                                                         <div className="flex items-center gap-3 flex-1 min-w-0">
                                                             <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
                                                                 <span className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>{cat.name}</span>
-                                                                <span className={`text-[11px] px-2 py-0.5 rounded-full border ${hiddenCount > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-yim-50 text-yim-600 border-yim-200'}`}>
-                                                                    {visibleCount}/{totalFields} velden geselecteerd
+                                                                <span className="text-[11px] px-2 py-0.5 rounded-full border bg-yim-50 text-yim-600 border-yim-200">
+                                                                    {visibleCount}/{totalFields} velden inzichtelijk
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        {canExpand && isActive && (
+                                                        {isActive && (
                                                             <span className="p-2 text-yim-400" aria-hidden="true">
                                                                 <svg className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -3558,13 +3628,12 @@
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {/* Field chips per Figma design */}
-                                                    {isExpanded && canExpand && isActive && (
+                                                    {/* Field badges (non-interactief) */}
+                                                    {isExpanded && isActive && (
                                                         <div className="border-t border-yim-200/60 px-4 py-3">
                                                             <div className="flex flex-wrap gap-1.5">
                                                                 {cat.fields.map(field => {
-                                                                    const hidden = catFO[field.id] === false;
-                                                                    const sensitivity = field.sensitivity || cat.sensitivity;
+                                                                    const sensitivity = field.sensitivity || 'basis';
                                                                     const dotColor = sensitivity === 'zeer_gevoelig' ? '#EF4444' : sensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
                                                                     return (
                                                                         <span key={field.id}
@@ -4002,14 +4071,20 @@
                                     let totalFields = 0;
                                     let selectedFields = 0;
                                     const fieldOverrides = editForm._fieldOverrides || {};
-                                    CATEGORIES.forEach(cat => {
+                                    const catSource = concept === 'H' ? MVP_CATEGORIES : CATEGORIES;
+                                    catSource.forEach(cat => {
                                         totalFields += cat.fields.length;
                                         if (!effectiveCats[cat.id]) return; // categorie uit → geen veld geselecteerd
                                         const catFO = fieldOverrides[cat.id] || {};
                                         const hidden = Object.values(catFO).filter(v => v === false).length;
                                         selectedFields += (cat.fields.length - hidden);
-                                        const lvl = sensitivityToLevel[cat.sensitivity] || 1;
-                                        if (lvl > maxLevel) maxLevel = lvl;
+                                        if (concept === 'H') {
+                                            const catMin = MVP_CATEGORY_MIN_LEVEL[cat.id] || 1;
+                                            if (catMin > maxLevel) maxLevel = catMin;
+                                        } else {
+                                            const lvl = sensitivityToLevel[cat.sensitivity] || 1;
+                                            if (lvl > maxLevel) maxLevel = lvl;
+                                        }
                                     });
                                     const level = SENSITIVITY_LEVELS.find(l => l.level === maxLevel);
                                     return (
