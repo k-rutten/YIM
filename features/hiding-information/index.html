@@ -873,16 +873,30 @@
                 const value = personFields[fieldId] || '';
 
                 if (!visible) {
-                    // Verborgen veld: vergrendeld + lock-icoon + niet bewerkbaar
+                    // Verborgen veld: vergrendeld + lock-icoon + niet bewerkbaar + hover-tooltip met categorie-reden
+                    const cat = CATEGORIES.find(c => c.id === def.categoryId);
+                    const catName = cat?.name || def.categoryId;
                     return (
-                        <div className="grid items-center gap-4 py-3 px-4 bg-yim-50 border-b border-yim-100 last:border-0" style={{ gridTemplateColumns: '240px 1fr' }}>
+                        <div className="grid items-center gap-4 py-3 px-4 bg-yim-50 border-b border-yim-100 last:border-0 relative group" style={{ gridTemplateColumns: '240px 1fr' }}>
                             <label className="text-sm text-yim-500 flex items-center gap-2">
                                 <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                 {def.name}
                             </label>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-yim-400 italic">Niet bewerkbaar — geen inzage</span>
-                                <span className="text-[10px] font-semibold text-yim-400 bg-yim-100 px-2 py-0.5 rounded uppercase tracking-wider">Vergrendeld</span>
+                                <span className="relative inline-flex">
+                                    <span className="text-[10px] font-semibold text-yim-400 bg-yim-100 px-2 py-0.5 rounded uppercase tracking-wider cursor-help">Vergrendeld</span>
+                                    <span className="absolute right-0 bottom-full mb-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 w-72">
+                                        <span className="block bg-yim-700 text-white text-[11px] rounded-md px-3 py-2 shadow-lg leading-snug">
+                                            <span className="flex items-center gap-1.5 font-semibold mb-1">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                Buiten je inzage
+                                            </span>
+                                            Categorie <span className="font-semibold text-amber-200">{catName}</span> staat niet aan in deze rol. Het veld blijft onaangetast bij opslaan.
+                                        </span>
+                                        <span className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-yim-700"></span>
+                                    </span>
+                                </span>
                             </div>
                         </div>
                     );
@@ -988,6 +1002,53 @@
                         {/* Main form area */}
                         <div className="flex-1 overflow-y-auto bg-yim-50/30 p-8">
                             <div className="max-w-4xl mx-auto">
+                                {/* 7c — Aggregate banner: editable / masked / locked fields over ALL steps */}
+                                {(() => {
+                                    const allFields = STEPS.flatMap(s => s.sections.flatMap(sec => sec.fields));
+                                    let editable = 0, masked = 0, locked = 0;
+                                    allFields.forEach(f => {
+                                        const def = FIELD_DEFS[f];
+                                        if (!def) return;
+                                        const visible = isFieldVisible(f);
+                                        const sensitive = isFieldSensitive(f);
+                                        if (!visible) locked++;
+                                        else if (sensitive) masked++;
+                                        else editable++;
+                                    });
+                                    return (
+                                        <div className="mb-6 bg-white border border-yim-200 rounded-lg px-5 py-4">
+                                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                                <div>
+                                                    <h2 className="text-sm font-bold text-yim-700 uppercase tracking-wider">Velden in dit dossier</h2>
+                                                    <p className="text-xs text-yim-500 opacity-70 mt-0.5">Wat je kan zien én bewerken hangt af van je rol-inzage.</p>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs">
+                                                    <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded px-2.5 py-1.5">
+                                                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                                        <span className="font-bold text-green-700">{editable}</span>
+                                                        <span className="text-green-600">bewerkbaar</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5" title="Velden waar je inzage hebt maar gevoeligheid hoog is — toon (5s) vereist om te bewerken">
+                                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                                        <span className="font-bold text-amber-700">{masked}</span>
+                                                        <span className="text-amber-600">gemaskeerd (toon-vereist)</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 bg-yim-100 border border-yim-200 rounded px-2.5 py-1.5" title="Velden buiten je rol-inzage — blijven onaangetast bij opslaan">
+                                                        <span className="w-2 h-2 rounded-full bg-yim-400"></span>
+                                                        <span className="font-bold text-yim-700">{locked}</span>
+                                                        <span className="text-yim-600">vergrendeld</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {locked > 0 && (
+                                                <p className="mt-3 text-[11px] text-yim-600 bg-yim-50 border-l-2 border-yim-400 px-3 py-1.5 rounded">
+                                                    <span className="font-semibold">{locked} vergrendelde velden</span> blijven onaangetast bij opslaan — je rol heeft geen inzage in deze categorieën.
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Step intro */}
                                 <div className="flex items-start gap-4 mb-6">
                                     <span className="w-8 h-8 rounded-full bg-yim-100 text-yim-700 flex items-center justify-center font-bold text-sm">
@@ -3383,6 +3444,69 @@
                                             </div>
                                         </div>
 
+                                        {/* ===== SAMENVATTING van de rol (live preview) — PR7 toevoeging ===== */}
+                                        {(() => {
+                                            const niveau = editForm.roleSettings?.niveau;
+                                            const niveauOpt = NIVEAU_OPTIONS.find(o => o.id === niveau);
+                                            const niveauScope = {
+                                                own: 'Alleen de gebruiker zelf',
+                                                employer: 'Personen in dienst bij eigen werkgever',
+                                                employerAndSubContractors: 'Eigen werkgever + onderaannemers',
+                                                departments: 'Toegewezen afdelingen',
+                                                managerAndEmployees: 'Directe rapportages',
+                                                all: 'Alle personen in tenant'
+                                            }[niveau] || '—';
+                                            const takenCount = (editForm.roleSettings?.taken || []).length;
+                                            const finalCatsS = { ...derivedCats };
+                                            Object.entries(overrides).forEach(([k, v]) => { finalCatsS[k] = v; });
+                                            const activeCats = Object.values(finalCatsS).filter(Boolean).length;
+                                            const sensToLvl = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
+                                            const sensLabels = { 1: 'Geen', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
+                                            const sensColors = { 1: '#9CA3AF', 2: '#10B981', 3: '#F59E0B', 4: '#EF4444' };
+                                            let maxL = 1;
+                                            CATEGORIES.forEach(c => { if (finalCatsS[c.id]) { const l = sensToLvl[c.sensitivity] || 1; if (l > maxL) maxL = l; } });
+                                            const canEdit = (editForm.roleSettings?.taken || []).includes('dossier_bewerken');
+                                            return (
+                                                <div className="border-t-2 border-yim-200 px-5 py-4 bg-gradient-to-br from-yim-50 to-white">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h4 className="text-sm font-bold text-yim-700 uppercase tracking-wider">Samenvatting</h4>
+                                                        <span className="text-[10px] text-yim-500 opacity-60 italic">Live preview voor admin</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3 text-xs">
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Rol</p>
+                                                            <p className="font-semibold text-yim-700 truncate">{editForm.name || '—'}</p>
+                                                            <p className="text-[11px] text-yim-500 opacity-70 mt-0.5 truncate">{editForm.description || ''}</p>
+                                                        </div>
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Bereik (niveau)</p>
+                                                            <p className="font-semibold text-yim-700">{niveauOpt ? niveauOpt.name.split(' (')[0] : '—'}</p>
+                                                            <p className="text-[11px] text-yim-500 opacity-70 mt-0.5">{niveauScope}</p>
+                                                        </div>
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Acties (taken)</p>
+                                                            <p className="font-semibold text-yim-700">{takenCount === 1 ? '1 taak' : `${takenCount} taken`}</p>
+                                                            <p className="text-[11px] mt-0.5" style={{ color: canEdit ? '#3b82f6' : '#9CA3AF' }}>{canEdit ? 'Mag dossier bewerken' : 'Geen bewerkrecht'}</p>
+                                                        </div>
+                                                        <div className="bg-white rounded border border-yim-200 px-3 py-2">
+                                                            <p className="text-[10px] text-yim-500 uppercase tracking-wider font-semibold mb-0.5">Data-inzage</p>
+                                                            <p className="font-semibold text-yim-700">{activeCats}/{CATEGORIES.length} categorieën</p>
+                                                            <p className="text-[11px] mt-0.5 font-semibold" style={{ color: sensColors[maxL] }}>Gevoeligheid: {sensLabels[maxL]}</p>
+                                                        </div>
+                                                    </div>
+                                                    {(overrideCount > 0 || fieldOverrideCount > 0) && (
+                                                        <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                                                            <span className="font-semibold">Let op: </span>
+                                                            {overrideCount > 0 && `${overrideCount} categorie-override${overrideCount > 1 ? 's' : ''}`}
+                                                            {overrideCount > 0 && fieldOverrideCount > 0 && ' · '}
+                                                            {fieldOverrideCount > 0 && `${fieldOverrideCount} veld-override${fieldOverrideCount > 1 ? 's' : ''}`}
+                                                            {' — wijkt af van afgeleide standaard.'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+
                                         {/* ===== 'In de praktijk' — concrete persoon-type ✓/✗ obv niveau-keuze ===== */}
                                         {(() => {
                                             const niveau = editForm.roleSettings?.niveau;
@@ -4120,8 +4244,216 @@
             );
         }
 
-        // Root Component with state management + concept toggle
+        // ============ NUANCED VISIBILITY DEMO (PR10 zijspoor) ============
+        // Binary tonen/verbergen is te grof. Voor veel velden is een nuance-mode (status / range / aggregate / laatste-N) genoeg.
+        // Data-minimization: toon minimum benodigde info ipv hele record. Past op AVG-principe "doelbinding + minimalisatie".
+        function NuancedVisibilityDemo() {
+            const NUANCE_MODES = {
+                FULL: { label: 'Volledig', desc: 'Hele waarde zichtbaar', color: 'bg-green-100 text-green-700 border-green-300' },
+                STATUS: { label: 'Status', desc: 'Boolean / status-indicator', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+                VALIDITY: { label: 'Geldigheid', desc: 'Verloopt op / Geldig tot', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+                LAST_N: { label: 'Laatste-N', desc: 'Alleen laatste N karakters', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+                FIRST_N: { label: 'Eerste-N', desc: 'Alleen eerste N karakters', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+                INITIALS: { label: 'Initialen', desc: 'Voornamen → initialen (J.M. de Vries)', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+                RANGE: { label: 'Bereik', desc: 'Categorie / range ipv exact', color: 'bg-pink-100 text-pink-700 border-pink-300' },
+                AREA: { label: 'Gebied', desc: 'Geografisch grof (postcode-deel)', color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
+                AGGREGATE: { label: 'Aggregaat', desc: 'Telling / som zonder details', color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+                TOKENIZED: { label: 'Token', desc: 'Match-token voor dedup zonder PII (Mixpanel-pattern)', color: 'bg-violet-100 text-violet-700 border-violet-300' },
+                COHORT: { label: 'Cohort (k-anon)', desc: 'Hide-in-cohort: één van N met zelfde profiel', color: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300' },
+                REQUEST: { label: 'Op aanvraag', desc: 'Klik om toegang te vragen + audit-event', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+                TIME_REVEAL: { label: 'Tijdelijk', desc: '5s onthullen via canReveal + audit-log (PR7-pattern)', color: 'bg-teal-100 text-teal-700 border-teal-300' },
+                HIDDEN: { label: 'Verborgen', desc: 'Volledig gemaskeerd', color: 'bg-yim-100 text-yim-500 border-yim-300' }
+            };
+            // Velden gebaseerd op YIM-productie Person.cs (28 public properties) + Workflows
+            const FIELDS = [
+                // ===== Identity / Persoonsgegevens =====
+                { name: 'Voornaam',                  cat: 'Identity',    modes: { FULL: 'Jan', FIRST_N: 'J***', INITIALS: 'J.', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Achternaam',                cat: 'Identity',    modes: { FULL: 'de Vries', FIRST_N: 'd***', INITIALS: 'de V.', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Volledige naam',            cat: 'Identity',    modes: { FULL: 'Jan Marcel de Vries', INITIALS: 'J.M. de Vries', FIRST_N: 'J*** *** de Vries', HIDDEN: '••••' }, recommended: 'INITIALS' },
+                { name: 'Personeelsnummer',          cat: 'Identity',    modes: { FULL: 'EMP-2024-08712', LAST_N: '*** 8712', TOKENIZED: 'emp_a3f8d2', HIDDEN: '••••' }, recommended: 'LAST_N' },
+                { name: 'Foto',                      cat: 'Identity',    modes: { FULL: '[foto-thumbnail]', STATUS: 'Heeft foto (uploaded 14-03-2024)', VALIDITY: 'Foto laatst bijgewerkt 14-03-2024', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Contact =====
+                { name: 'Telefoon',                  cat: 'Contact',     modes: { FULL: '+31 6 1234 5678', LAST_N: '+31 6 **** 5678', FIRST_N: '+31 6 1234 ****', AREA: '+31 6 (Nederlands mobiel)', HIDDEN: '••••' }, recommended: 'LAST_N' },
+                { name: 'E-mail',                    cat: 'Contact',     modes: { FULL: 'jan.devries@shellnederland.nl', LAST_N: 'j***********@shellnederland.nl', AREA: '@shellnederland.nl (domein)', HIDDEN: '••••' }, recommended: 'AREA' },
+                { name: 'Adres',                     cat: 'Contact',     modes: { FULL: '1226 University Dr, 3072 RD Rotterdam', AREA: '3072 ** RD · Rotterdam', RANGE: 'Rotterdam-Zuid', HIDDEN: '••••' }, recommended: 'AREA' },
+                { name: 'Plaats / Land',             cat: 'Contact',     modes: { FULL: 'Rotterdam, Nederland', AREA: 'Zuid-Holland, NL', RANGE: 'EU-resident', HIDDEN: '••••' }, recommended: 'FULL' },
+                // ===== Government-ID (extra gevoelig) =====
+                { name: 'BSN',                       cat: 'Government',  modes: { FULL: '123 45 6789', LAST_N: '*** ** 6789', TOKENIZED: 'bsn_t9a2c4', TIME_REVEAL: '5s onthullen (audit-log)', REQUEST: 'Klik om toegang te vragen', HIDDEN: '••••' }, recommended: 'HIDDEN' },
+                { name: 'ID-document',               cat: 'Government',  modes: { FULL: 'Paspoort NL · NX12345AB · vervalt 04-2031', STATUS: 'Heeft geldig ID', VALIDITY: 'Paspoort · vervalt 04-2031', LAST_N: '****-AB', HIDDEN: '••••' }, recommended: 'VALIDITY' },
+                { name: 'VOG',                       cat: 'Government',  modes: { FULL: 'VOG NP profiel 84 · #VOG-2025-08712', STATUS: 'Heeft geldige VOG', VALIDITY: 'Afgegeven 12-01-2025', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Geboortedatum',             cat: 'Government',  modes: { FULL: '14-07-1987', RANGE: 'Leeftijd: 35–45 jaar', STATUS: 'Volwassen (18+)', COHORT: 'Eén van 25 personen, 35–45 jr', HIDDEN: '••••' }, recommended: 'RANGE' },
+                { name: 'Nationaliteit',             cat: 'Government',  modes: { FULL: 'Nederlandse', STATUS: 'EU-onderdaan', COHORT: 'Eén van 142 NL-paspoort houders', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Employment =====
+                { name: 'Werkgever',                 cat: 'Employment',  modes: { FULL: 'ABC Bouw B.V.', AREA: 'Onderaannemer (regio Zuid)', AGGREGATE: '1 van 3 werkgevers', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'KVK-nummer werkgever',      cat: 'Employment',  modes: { FULL: '24123456', LAST_N: '*** 3456', TOKENIZED: 'kvk_b7d', HIDDEN: '••••' }, recommended: 'LAST_N' },
+                { name: 'Hoofdaannemer',             cat: 'Employment',  modes: { FULL: 'Shell Nederland B.V.', AREA: 'Petrochemie sector', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Functie',                   cat: 'Employment',  modes: { FULL: 'Onderhoudsmonteur · NEN-3140', RANGE: 'Technisch personeel', AGGREGATE: '1 van 12 monteurs', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Contractperiode',           cat: 'Employment',  modes: { FULL: '02-01-2025 t/m 31-12-2026', VALIDITY: 'Loopt tot 31-12-2026', RANGE: '6-12 maanden', STATUS: 'Actief contract', HIDDEN: '••••' }, recommended: 'VALIDITY' },
+                // ===== Sociale lasten (zeer gevoelig) =====
+                { name: 'Sociaal verzekerd NL',      cat: 'Sociale',     modes: { FULL: 'Ja, sinds 02-01-2025', STATUS: 'Sociaal verzekerd: Ja', VALIDITY: 'Sinds 02-01-2025', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'A1-document',               cat: 'Sociale',     modes: { FULL: 'A1 #NL-2025-A1-12345 · geldig t/m 31-12-2026', STATUS: 'Heeft geldige A1', VALIDITY: 'Geldig t/m 31-12-2026', LAST_N: '****-12345', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Werkzaamheden 50%+ klant',  cat: 'Sociale',     modes: { FULL: 'Ja, gemeld bij PostedWorkers', STATUS: 'Compliant', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Certificaten (overig) =====
+                { name: 'VCA-certificaat',           cat: 'Certificaten', modes: { FULL: 'VCA-VOL · behaald 14-03-2024 · t/m 13-03-2028', STATUS: 'Heeft geldig VCA', VALIDITY: 'Geldig t/m 13-03-2028', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'BHV-certificaat',           cat: 'Certificaten', modes: { FULL: 'BHV-EHBO + Brand · behaald 20-09-2024', STATUS: 'Heeft BHV', VALIDITY: 'Geldig t/m 19-09-2026', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Werkvergunning',            cat: 'Certificaten', modes: { FULL: 'WV-NL · #WV-2024-92831 · geldig t/m 14-03-2027', STATUS: 'Heeft werkvergunning', VALIDITY: 'Geldig t/m 14-03-2027', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Rijbewijs',                 cat: 'Certificaten', modes: { FULL: 'B+E · #5832118273 · geldig t/m 04-2030', STATUS: 'Heeft rijbewijs B+E', VALIDITY: 'Geldig t/m 04-2030', LAST_N: '****-8273', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Certificaten (totaal)',     cat: 'Certificaten', modes: { FULL: 'VCA · BHV · NEN-3140 · ATEX · 4 certificaten', AGGREGATE: '4 geldige certificaten · 0 verlopen', RANGE: 'Compleet voor profiel', HIDDEN: '••••' }, recommended: 'AGGREGATE' },
+                // ===== Bestanden =====
+                { name: 'Arbeidsovereenkomst',       cat: 'Bestanden',   modes: { FULL: '[PDF: contract_2025.pdf, 245kb]', STATUS: 'Contract aanwezig', VALIDITY: 'Bijgewerkt 02-01-2025', AGGREGATE: '1 document', REQUEST: 'Klik om toegang aan te vragen', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Loonstroken',               cat: 'Bestanden',   modes: { FULL: '[12 PDFs, jan-dec 2025]', AGGREGATE: '12 loonstroken (laatste 12 mnd)', STATUS: 'Loonadministratie actueel', REQUEST: 'Klik om toegang aan te vragen', HIDDEN: '••••' }, recommended: 'AGGREGATE' },
+                // ===== Toegang & locatie =====
+                { name: 'Toegewezen locaties',       cat: 'Toegang',     modes: { FULL: 'Shell Botlek · Shell Pernis · BP Raffinaderij', AGGREGATE: '3 locaties toegewezen', AREA: 'Rotterdam-haven cluster', HIDDEN: '••••' }, recommended: 'FULL' },
+                { name: 'Toegangszones',             cat: 'Toegang',     modes: { FULL: 'BASIS · Zone-A · Zone-Noord', AGGREGATE: '3 zones · BASIS-niveau', RANGE: 'Standaard contractor', HIDDEN: '••••' }, recommended: 'AGGREGATE' },
+                { name: 'Kenteken',                  cat: 'Toegang',     modes: { FULL: '12-AB-CD · NL', LAST_N: '**-AB-CD', AREA: 'NL-kenteken', STATUS: 'Heeft voertuig geregistreerd', HIDDEN: '••••' }, recommended: 'STATUS' },
+                // ===== Blocking / status =====
+                { name: 'Geblokkeerd-status',        cat: 'Status',      modes: { FULL: 'Niet geblokkeerd · ', STATUS: 'Actief', HIDDEN: '••••' }, recommended: 'STATUS' },
+                { name: 'Blokkade-reden',            cat: 'Status',      modes: { FULL: '(N.v.t. — niet geblokkeerd)', STATUS: 'Geen blokkades', REQUEST: 'Klik voor blokkade-historie', HIDDEN: '••••' }, recommended: 'STATUS' }
+            ];
+            const [fieldModes, setFieldModes] = React.useState(() => Object.fromEntries(FIELDS.map(f => [f.name, f.recommended])));
+
+            return (
+                <div className="bg-yim-50/30 min-h-screen">
+                    <div className="max-w-6xl mx-auto px-6 py-8">
+                        {/* Intro */}
+                        <div className="mb-6 bg-white border border-yim-200 rounded-lg px-5 py-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Zijspoor — PR10</span>
+                                <span className="text-[10px] text-yim-400">·</span>
+                                <span className="text-[10px] text-yim-500">Inspiratie: <a href="https://mobbin.com/screens/2f041b23-6538-4a65-8e29-c7eb92d90eb1" target="_blank" className="underline">Neon data masking</a> · eigen ontwerp voor status/range/aggregate</span>
+                            </div>
+                            <h1 className="text-2xl font-bold text-yim-700">Nuanced Visibility — data-minimization patterns</h1>
+                            <p className="text-sm text-yim-600 opacity-80 mt-1">Binary tonen/verbergen is vaak te grof. Voor veel velden volstaat een <span className="font-semibold">status-indicator</span>, <span className="font-semibold">geldigheid</span>, <span className="font-semibold">laatste-N karakters</span>, <span className="font-semibold">bereik</span> of <span className="font-semibold">aggregaat</span>. Past op AVG-principe "doelbinding + minimalisatie".</p>
+                            <p className="text-xs text-yim-700 bg-yim-50 border-l-2 border-rose-400 px-3 py-2 rounded mt-3">
+                                <span className="font-semibold">Voorbeeld:</span> Beveiliging hoeft geen VCA-document te zien — "Heeft geldig VCA" is genoeg. HR-coördinator hoeft geen volledig telefoonnummer — laatste 4 cijfers voor identificatie volstaan.
+                            </p>
+                        </div>
+
+                        {/* Legenda */}
+                        <div className="mb-4 bg-white border border-yim-200 rounded-lg px-5 py-3">
+                            <p className="text-[10px] uppercase tracking-wider text-yim-500 font-semibold mb-2">8 Nuance-modes</p>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(NUANCE_MODES).map(([k, m]) => (
+                                    <span key={k} className={`text-[11px] px-2 py-1 rounded border ${m.color}`} title={m.desc}>
+                                        <span className="font-bold">{m.label}</span> — <span className="opacity-80">{m.desc}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Per-veld matrix */}
+                        <div className="bg-white border border-yim-200 rounded-xl overflow-hidden">
+                            <div className="px-6 py-4 border-b border-yim-200">
+                                <h2 className="text-lg font-bold text-yim-700">Per-veld nuance-keuze · Jan de Vries</h2>
+                                <p className="text-xs text-yim-500 mt-0.5">Kies per veld de minimaal-benodigde detail-niveau. Admin/role-config kan dit per rol bepalen.</p>
+                            </div>
+                            <table className="w-full text-sm">
+                                <thead className="bg-yim-50/40 text-[10px] uppercase tracking-wider text-yim-500 sticky top-0">
+                                    <tr>
+                                        <th className="text-left px-4 py-2">Veld</th>
+                                        <th className="text-left px-4 py-2">Nuance-mode</th>
+                                        <th className="text-left px-4 py-2">Wat de gebruiker ziet</th>
+                                        <th className="text-right px-4 py-2">Aanbevolen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        // Group by category for readability
+                                        const grouped = {};
+                                        FIELDS.forEach(f => { (grouped[f.cat || 'Overig'] = grouped[f.cat || 'Overig'] || []).push(f); });
+                                        const rows = [];
+                                        Object.entries(grouped).forEach(([cat, fields]) => {
+                                            rows.push(
+                                                <tr key={`cat-${cat}`} className="bg-yim-50/60">
+                                                    <td colSpan={4} className="px-4 py-1.5 text-[10px] uppercase tracking-wider text-yim-600 font-bold">{cat} <span className="opacity-60 font-normal">· {fields.length} velden</span></td>
+                                                </tr>
+                                            );
+                                            fields.forEach((f, i) => {
+                                                const currentMode = fieldModes[f.name];
+                                                const display = f.modes[currentMode];
+                                                const isRec = currentMode === f.recommended;
+                                                rows.push(
+                                                    <tr key={`${cat}-${i}`} className="border-t border-yim-100 hover:bg-yim-50/30">
+                                                        <td className="px-4 py-2.5 font-semibold text-yim-700">{f.name}</td>
+                                                        <td className="px-4 py-2.5">
+                                                            <select value={currentMode}
+                                                                onChange={e => setFieldModes(prev => ({ ...prev, [f.name]: e.target.value }))}
+                                                                className="text-xs border border-yim-300 rounded px-2 py-1 bg-white">
+                                                                {Object.keys(f.modes).map(mk => (
+                                                                    <option key={mk} value={mk}>{NUANCE_MODES[mk].label}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-4 py-2.5">
+                                                            <span className={`inline-block text-xs px-2 py-1 rounded border font-mono ${NUANCE_MODES[currentMode].color}`}>
+                                                                {display || '—'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-2.5 text-right">
+                                                            {isRec ? (
+                                                                <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded uppercase tracking-wider">✓ Aanbevolen</span>
+                                                            ) : (
+                                                                <button onClick={() => setFieldModes(prev => ({ ...prev, [f.name]: f.recommended }))}
+                                                                    className="text-[10px] text-yim-500 underline hover:text-yim-700">
+                                                                    Reset
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            });
+                                        });
+                                        return rows;
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* AVG-perspectief */}
+                        <div className="mt-6 bg-white border border-yim-200 rounded-lg px-5 py-4">
+                            <h3 className="text-sm font-bold text-yim-700 uppercase tracking-wider">Waarom dit relevant is voor AVG</h3>
+                            <ul className="text-xs text-yim-600 space-y-1.5 mt-2">
+                                <li><span className="font-semibold">Doelbinding:</span> rol/persoon krijgt alleen wat strikt nodig is voor hun taak. VCA-status volstaat voor toegangscontrole; certificaat-details horen alleen bij QHSE-team.</li>
+                                <li><span className="font-semibold">Minimalisatie:</span> minder PII in omloop = kleinere data-lek-impact + lichtere AVG-verwerkingsregister-vereisten.</li>
+                                <li><span className="font-semibold">Rechtsgrond per nuance-mode:</span> "STATUS" valt vaak onder gerechtvaardigd belang, "FULL" vereist vaker expliciete grondslag.</li>
+                                <li><span className="font-semibold">Audit-trail:</span> elke nuance-mode-keuze is herleidbaar — minder kans op "wist niet dat ik te veel zag".</li>
+                            </ul>
+                        </div>
+
+                        {/* Implementation note */}
+                        <div className="mt-4 bg-rose-50/50 border border-rose-200 rounded-lg px-5 py-4">
+                            <h3 className="text-sm font-bold text-rose-700 uppercase tracking-wider">Implementatie-richting</h3>
+                            <p className="text-xs text-yim-700 mt-2">
+                                Voeg een <code className="bg-white border border-yim-300 px-1 py-0.5 rounded text-[11px]">DisplayMode</code> enum toe naast de bestaande <code className="bg-white border border-yim-300 px-1 py-0.5 rounded text-[11px]">DossierAccessLevels</code>:
+                            </p>
+                            <pre className="mt-2 bg-white border border-yim-200 rounded p-2 text-[11px] text-yim-700 overflow-x-auto">
+{`public enum DisplayMode {
+    Full = 0,        // huidig 'visible'
+    Status,          // boolean / status-tag
+    Validity,        // geldigheid t/m
+    LastN,           // laatste N tekens
+    Range,           // bereik / categorie
+    Area,            // grof gebied
+    Aggregate,       // count / som
+    Hidden           // huidig 'masked'
+}`}
+                            </pre>
+                            <p className="text-xs text-yim-700 mt-2">
+                                Per <code className="bg-white border border-yim-300 px-1 py-0.5 rounded text-[11px]">AuthorizationRule × FieldType</code> opslaan. Default = Full als rol inzage heeft, Hidden anders. Renderer in viewer-mode + edit-mode kiest weergave op basis van mode.
+                            </p>
+                        </div>
+
+                        <p className="text-[11px] text-yim-400 italic text-center mt-6">
+                            Zijspoor / verkenning · niet gewired aan bestaande rol-engine · concept demo voor AVG-overleg
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Root Component with state management + concept toggle + zijspoor mode
         function Root() {
+            const [productMode, setProductMode] = useState('huidig'); // huidig | zijspoor
             const [concept, setConcept] = useState('A');
             const [rolesA, setRolesA] = useState(initialRolesA);
             const [rolesC, setRolesC] = useState(initialRolesC);
@@ -4136,27 +4468,48 @@
                 <div>
                     {/* Fixture Toggle */}
                     <div className="bg-yim-950 text-white">
-                        <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Concept</span>
-                                <div className="flex bg-white/10 rounded-lg p-0.5">
-                                    <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        1: Profielen
-                                    </button>
-                                    <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
-                                        3: Taakafleiding
-                                    </button>
+                        <div className="max-w-6xl mx-auto px-6 py-2.5 flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex items-center gap-4 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Product</span>
+                                    <div className="flex bg-white/10 rounded-lg p-0.5">
+                                        <button onClick={() => setProductMode('huidig')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${productMode === 'huidig' ? 'bg-white text-yim-700 shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                            Huidig
+                                        </button>
+                                        <button onClick={() => setProductMode('zijspoor')}
+                                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${productMode === 'zijspoor' ? 'bg-rose-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                            Zijspoor: Nuance
+                                        </button>
+                                    </div>
                                 </div>
+                                {productMode === 'huidig' && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Concept</span>
+                                        <div className="flex bg-white/10 rounded-lg p-0.5">
+                                            <button onClick={() => setConcept('A')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'A' ? 'bg-yim-orange text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                1: Profielen
+                                            </button>
+                                            <button onClick={() => setConcept('G')} className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${concept === 'G' ? 'bg-teal-500 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                                                3: Taakafleiding
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <p className="text-xs text-white/40">
-                                {concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
-                                 : concept === 'C' ? 'Inzageniveau met suggestie · Categorieën volgen uit rolinstellingen'
+                                {productMode === 'zijspoor' ? 'Nuance-modes — data-minimization ipv binary show/hide · per veld pick het minimaal-benodigde detail-niveau'
+                                 : concept === 'A' ? 'Profiel = bron van waarheid · Profielwijziging raakt alle gekoppelde rollen'
                                  : concept === 'G' ? 'Categorieën afgeleid uit taken · Handmatige override met waarschuwing'
                                  : 'Categorieën per rol · Presets · Harde grenzen bij cross-company'}
                             </p>
                         </div>
                     </div>
-                    <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} setConcept={setConcept} />
+                    {productMode === 'huidig' ? (
+                        <App roles={roles} setRoles={setRoles} visibilityProfiles={visibilityProfiles} setVisibilityProfiles={setVisibilityProfiles} currentTab={currentTab} setCurrentTab={setCurrentTab} concept={concept} setConcept={setConcept} />
+                    ) : (
+                        <NuancedVisibilityDemo />
+                    )}
                 </div>
             );
         }
