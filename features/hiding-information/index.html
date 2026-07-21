@@ -1887,7 +1887,7 @@
                 { id: 'last_name', name: 'Achternaam', sensitivity: 'basis' },
                 { id: 'date_of_birth', name: 'Geboortedatum', sensitivity: 'basis' },
                 { id: 'photo', name: 'Pasfoto', sensitivity: 'basis' },
-                { id: 'nationality', name: 'Nationaliteit', sensitivity: 'gevoelig' },
+                { id: 'nationality', name: 'Nationaliteit', sensitivity: 'hoge_gevoeligheid' },
               ]},
             { id: 'contact', name: 'Contact',
               fields: [
@@ -1895,7 +1895,7 @@
                 { id: 'phone', name: 'Telefoonnummer', sensitivity: 'basis' },
                 { id: 'language', name: 'Taal', sensitivity: 'basis' },
                 { id: 'locality', name: 'Plaats', sensitivity: 'gevoelig' },
-                { id: 'country_of_residence', name: 'Land van vestiging', sensitivity: 'gevoelig' },
+                { id: 'country_of_residence', name: 'Land van vestiging', sensitivity: 'hoge_gevoeligheid' },
               ]},
             { id: 'government_id', name: 'Overheids-ID',
               fields: [
@@ -1949,6 +1949,18 @@
             identity: 1, contact: 2, government_id: 4, employment: 3,
             social_costs: 4, compliance: 2, certificates: 2, access: 3,
         };
+        // 4-level palette (Figma 9880-2305): Basis/Gevoelig/Hoge gevoeligheid/Zeer gevoelig
+        const INZAGE_LEVEL_LABELS = { 1: 'Basis inzage', 2: 'Standaard inzage', 3: 'Uitgebreide inzage', 4: 'Volledige inzage' };
+        const INZAGE_LEVEL_BADGE_NAMES = { 1: 'Basis', 2: 'Gevoelig', 3: 'Hoge gevoeligheid', 4: 'Zeer gevoelig' };
+        const INZAGE_LEVEL_COLORS = { 1: '#4bc79c', 2: '#f9db52', 3: '#ffb020', 4: '#bc243b' };
+        const SENSITIVITY_STYLE = {
+            basis: { bg: '#c9ecdb', color: '#0e5c34', border: '#a3dcbf' },
+            gevoelig: { bg: '#fdf3c7', color: '#7a5a00', border: '#f4e08a' },
+            hoge_gevoeligheid: { bg: '#fce4c8', color: '#8a4c00', border: '#f4c58e' },
+            zeer_gevoelig: { bg: '#f8d0d5', color: '#7a1f2a', border: '#e9b0b6' },
+        };
+        // MVP field sensitivity → matcht risico-bar levels 1..4
+        const MVP_FIELD_LEVEL = { basis: 1, gevoelig: 2, hoge_gevoeligheid: 3, zeer_gevoelig: 4 };
         const deriveMVPCategories = (inzageniveau) => {
             const result = {};
             MVP_CATEGORIES.forEach(cat => {
@@ -3598,58 +3610,94 @@
                                             </div>
                                         </div>
 
-                                        {/* Read-only accordion: categorieën volgen uit inzageniveau */}
-                                        <div className="border-t border-yim-200 px-4 py-4 space-y-2">
-                                            {MVP_CATEGORIES.map(cat => {
-                                                const isActive = !!derivedCats[cat.id];
-                                                const isExpanded = expandedCatId === cat.id;
-                                                const catFO = fieldOverrides[cat.id] || {};
-                                                const hiddenCount = Object.values(catFO).filter(v => v === false).length;
-                                                const totalFields = cat.fields.length;
-                                                const visibleCount = isActive ? (totalFields - hiddenCount) : 0;
-                                                return (
-                                                <div key={cat.id} className="rounded-lg overflow-hidden border border-yim-200 hover:border-yim-300 transition-colors bg-white">
-                                                    {/* Row = header (klikbaar) */}
-                                                    <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-50' : ''} ${isActive ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
-                                                        onClick={() => isActive && setExpandedCatId(prev => prev === cat.id ? null : cat.id)}>
-                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
-                                                                <span className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>{cat.name}</span>
-                                                                <span className="text-[11px] px-2 py-0.5 rounded-full border bg-yim-50 text-yim-600 border-yim-200">
-                                                                    {visibleCount}/{totalFields} velden inzichtelijk
-                                                                </span>
-                                                            </div>
+                                        {/* Inzichtelijke velden card — Figma 9880-2305 */}
+                                        <div className="border-t border-yim-200 px-4 py-4">
+                                            <div className="rounded-lg border border-yim-200 overflow-hidden bg-white">
+                                                {/* Card header: dropdown-value + subtitle + sensitivity-badge + risico-bar */}
+                                                <div className="px-5 py-4">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-base font-bold text-yim-700 leading-6" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                {INZAGE_LEVEL_LABELS[inzageniveau] || 'Basis inzage'}
+                                                            </h4>
+                                                            <p className="text-[13px] text-yim-500 mt-0.5 leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                Bekijk hier de velden die inzichtelijk zijn voor het geselecteerde niveau
+                                                            </p>
                                                         </div>
-                                                        {isActive && (
-                                                            <span className="p-2 text-yim-400" aria-hidden="true">
-                                                                <svg className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                                </svg>
-                                                            </span>
-                                                        )}
+                                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white shrink-0"
+                                                            style={{ backgroundColor: INZAGE_LEVEL_COLORS[inzageniveau] || '#4bc79c', fontFamily: 'Nunito, sans-serif' }}>
+                                                            {INZAGE_LEVEL_BADGE_NAMES[inzageniveau] || 'Basis'}
+                                                        </span>
                                                     </div>
-                                                    {/* Field badges (non-interactief) */}
-                                                    {isExpanded && isActive && (
-                                                        <div className="border-t border-yim-200/60 px-4 py-3">
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {cat.fields.map(field => {
-                                                                    const sensitivity = field.sensitivity || 'basis';
-                                                                    const dotColor = sensitivity === 'zeer_gevoelig' ? '#EF4444' : sensitivity === 'gevoelig' ? '#F59E0B' : '#9CA3AF';
-                                                                    return (
-                                                                        <span key={field.id}
-                                                                            className="inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full text-[13px] font-semibold border bg-white text-yim-700 border-yim-500"
-                                                                            style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
-                                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }}></span>
-                                                                            {field.name}
-                                                                        </span>
-                                                                    );
-                                                                })}
+                                                    {/* Risico-inzage 4-segment bar */}
+                                                    <div className="mt-3">
+                                                        <div className="flex h-2 rounded-full overflow-hidden">
+                                                            {[1, 2, 3, 4].map(lvl => (
+                                                                <div key={lvl} className="flex-1" style={{ backgroundColor: INZAGE_LEVEL_COLORS[lvl] }}></div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="relative h-2 -mt-0.5">
+                                                            <div className="absolute" style={{ left: `${(inzageniveau - 1) * 25 + 12.5}%`, transform: 'translateX(-50%)' }}>
+                                                                <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
+                                                                    <path d="M7 0 L14 8 L0 8 Z" fill="#fff" stroke="#94a3b8" strokeWidth="1" />
+                                                                </svg>
                                                             </div>
                                                         </div>
-                                                    )}
+                                                        <div className="flex text-[11px] text-yim-600 mt-1" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                            {[1, 2, 3, 4].map(lvl => (
+                                                                <div key={lvl} className="flex-1 text-center">{INZAGE_LEVEL_BADGE_NAMES[lvl]}</div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                );
-                                            })}
+                                                {/* Flat rows — chevron-left, border-t divider */}
+                                                <div>
+                                                    {MVP_CATEGORIES.map(cat => {
+                                                        const isActive = !!derivedCats[cat.id];
+                                                        const isExpanded = expandedCatId === cat.id;
+                                                        const catFO = fieldOverrides[cat.id] || {};
+                                                        const hiddenCount = Object.values(catFO).filter(v => v === false).length;
+                                                        const totalFields = cat.fields.length;
+                                                        const visibleCount = isActive ? (totalFields - hiddenCount) : 0;
+                                                        return (
+                                                            <div key={cat.id} className="border-t border-yim-100">
+                                                                <div className={`flex items-center gap-3 px-5 py-3 ${isActive ? 'cursor-pointer hover:bg-yim-50/50' : 'opacity-50'}`}
+                                                                    onClick={() => isActive && setExpandedCatId(prev => prev === cat.id ? null : cat.id)}>
+                                                                    <svg className={`w-5 h-5 text-yim-500 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                    <span className="text-base font-semibold text-yim-700 flex-1"
+                                                                          style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                        {cat.name}
+                                                                    </span>
+                                                                    <span className="text-[11px] px-2.5 py-1 rounded-full bg-yim-50 text-yim-600 border border-yim-100 shrink-0"
+                                                                          style={{ fontFamily: 'Nunito, sans-serif' }}>
+                                                                        {visibleCount}/{totalFields} velden inzichtelijk
+                                                                    </span>
+                                                                </div>
+                                                                {isExpanded && isActive && (
+                                                                    <div className="px-5 pb-4">
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {cat.fields.map(field => {
+                                                                                const sensitivity = field.sensitivity || 'basis';
+                                                                                const style = SENSITIVITY_STYLE[sensitivity] || SENSITIVITY_STYLE.basis;
+                                                                                return (
+                                                                                    <span key={field.id}
+                                                                                          className="inline-flex items-center h-7 px-3 rounded-full text-[13px] font-semibold border"
+                                                                                          style={{ backgroundColor: style.bg, color: style.color, borderColor: style.border, fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
+                                                                                        {field.name}
+                                                                                    </span>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     );
