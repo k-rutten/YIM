@@ -560,14 +560,17 @@
 
         // ============ YIM-STYLE DOSSIER VIEW (Overzicht tab) ============
         // Spiegelt de echte YIM Blacklist dossier-layout. Visibility-engine geapplied.
-        function YIMDossierView({ role, profile, concept, canReveal, canEditDossier, revealedFields, setRevealedFields, setAuditLog, onEditDossier }) {
+        function YIMDossierView({ role, profile, concept, canReveal, canEditDossier, revealedFields, setRevealedFields, setAuditLog, revealAllActive, toggleRevealAll, onEditDossier }) {
             const [activeTab, setActiveTab] = useState('Dossier');
             const tabs = ['Dossier', 'Autorisaties', 'Aanmeldingen', 'Geschiedenis', 'Credentials', 'Certificaten'];
 
             // Helper: bepaal of een veld zichtbaar is voor huidige rol
+            // Wanneer revealAllActive én canReveal → ALLE velden zichtbaar (C+D → E temporarily, Figma annotatie #15)
             const isFieldVisible = (fieldId) => {
                 const def = FIELD_DEFS[fieldId];
                 if (!def) return false;
+                // Session-scoped reveal-all override
+                if (canReveal && revealAllActive) return true;
                 // Categorie-niveau check
                 const effectiveCats = concept === 'A' ? profile?.allowedCategories : role.allowedCategories;
                 const catAllowed = !!effectiveCats?.[def.categoryId];
@@ -691,6 +694,23 @@
                             </div>
                         </div>
 
+                        {/* Session-scoped 'Tijdelijk onthullen' toggle — alleen zichtbaar als rol reveal-capability heeft (Figma annotatie #15) */}
+                        {canReveal && (
+                            <div className="mt-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    <div>
+                                        <p className="text-sm font-semibold text-amber-900">Tijdelijk onthullen</p>
+                                        <p className="text-xs text-amber-700 opacity-80">{revealAllActive ? 'Alle verborgen velden worden tijdelijk getoond · sessie-gebonden · gelogd' : 'Klik Aan om alle verborgen velden tijdelijk te tonen (C+D → E)'}</p>
+                                    </div>
+                                </div>
+                                <div className="inline-flex rounded-lg border border-amber-300 overflow-hidden">
+                                    <button onClick={() => toggleRevealAll && toggleRevealAll(true)} className={`px-4 py-1 text-sm font-medium transition-all ${revealAllActive ? 'bg-amber-500 text-white' : 'bg-white text-amber-800 hover:bg-amber-100'}`}>Aan</button>
+                                    <button onClick={() => toggleRevealAll && toggleRevealAll(false)} className={`px-4 py-1 text-sm font-medium transition-all border-l border-amber-300 ${!revealAllActive ? 'bg-amber-100 text-amber-900' : 'bg-white text-amber-800 hover:bg-amber-100'}`}>Uit</button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Tabs */}
                         <div className="border-b border-yim-300 flex gap-0 mb-8 mt-6">
                             {tabs.map(t => (
@@ -776,14 +796,15 @@
 
         // ============ YIM-STYLE DOSSIER EDIT VIEW (full-screen overlay) ============
         // YIM-stepper layout. Verborgen velden = locked. Gemaskeerde velden = oog-reveal + audit log.
-        function YIMDossierEdit({ role, profile, concept, canReveal, revealedFields, setRevealedFields, setAuditLog, onClose }) {
+        function YIMDossierEdit({ role, profile, concept, canReveal, revealedFields, setRevealedFields, setAuditLog, revealAllActive, onClose }) {
             const [activeStep, setActiveStep] = useState(1);
             const [activeSubSection, setActiveSubSection] = useState(null);
 
-            // Same visibility-engine als YIMDossierView
+            // Same visibility-engine als YIMDossierView (incl. reveal-all override — Figma annotatie #15)
             const isFieldVisible = (fieldId) => {
                 const def = FIELD_DEFS[fieldId];
                 if (!def) return false;
+                if (canReveal && revealAllActive) return true;
                 const effectiveCats = concept === 'A' ? profile?.allowedCategories : role.allowedCategories;
                 if (!effectiveCats?.[def.categoryId]) return false;
                 if (concept === 'G' && role._fieldOverrides && role._fieldOverrides[def.categoryId]) {
@@ -1045,6 +1066,10 @@
             };
             const [revealedFields, setRevealedFields] = useState({});
             const [editMode, setEditMode] = useState(false);
+            // Session-scoped 'reveal all' mode: wanneer role.canReveal én deze state true zijn,
+            // toont dossier-view alle hidden fields (C+D) tijdelijk als E (Tonen).
+            // Reset op page refresh (React useState = per-session). Per Figma annotatie #15.
+            const [revealAllActive, setRevealAllActive] = useState(false);
 
             // Match role config to preset name for viewer badges
             const matchPresetForViewer = (r) => INITIAL_PRESETS.find(p =>
@@ -1077,6 +1102,25 @@
                     action: 'FIELD_REVEAL'
                 };
                 setAuditLog(prev => [entry, ...prev]);
+            };
+
+            // Log activation of session-scoped 'reveal all' mode (Figma annotatie #15)
+            const logRevealAllActivated = (active) => {
+                setAuditLog(prev => [{
+                    timestamp: new Date().toISOString(),
+                    role: role.name,
+                    category: '—',
+                    field: '—',
+                    value: active ? 'C+D → E (session-scoped)' : 'deactivated',
+                    action: active ? 'REVEAL_ALL_ACTIVATED' : 'REVEAL_ALL_DEACTIVATED'
+                }, ...prev]);
+            };
+
+            // Wrapped setter voor revealAllActive die tegelijk audit-logt
+            const toggleRevealAll = (active) => {
+                if (!canReveal) return; // vereist elevated role
+                setRevealAllActive(active);
+                logRevealAllActivated(active);
             };
 
             // Handle field reveal with 5-second timeout
@@ -1473,6 +1517,8 @@
                             revealedFields={revealedFields}
                             setRevealedFields={setRevealedFields}
                             setAuditLog={setAuditLog}
+                            revealAllActive={revealAllActive}
+                            toggleRevealAll={toggleRevealAll}
                             onEditDossier={() => canEditDossier && setEditMode(true)}
                         />
 
@@ -1486,6 +1532,7 @@
                                 revealedFields={revealedFields}
                                 setRevealedFields={setRevealedFields}
                                 setAuditLog={setAuditLog}
+                                revealAllActive={revealAllActive}
                                 onClose={() => setEditMode(false)}
                             />
                         )}
@@ -3064,34 +3111,10 @@
                                     };
 
                                     return (
-                                    <div className="bg-white rounded-xl border border-yim-200 overflow-hidden mt-2">
-                                        <div className="px-5 py-4 border-b border-yim-200">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-sm font-semibold text-yim-600">Afgeleide data-inzage</h3>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs text-yim-500 bg-yim-50 px-2 py-0.5 rounded border border-yim-200">{derivedCount} afgeleid</span>
-                                                    {overrideCount > 0 && <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{overrideCount} categorie-override</span>}
-                                                    {fieldOverrideCount > 0 && <span className="text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">{fieldOverrideCount} veld-override</span>}
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-yim-600 opacity-50 mt-1">Categorieën worden automatisch bepaald. Klik op de checkbox om de hele categorie te overriden, of klap open voor veld-niveau controle.</p>
-                                            {/* Niveau (CompanyAccessLevel) — uitleg per gekozen bereik */}
-                                            {(() => {
-                                                const lvl = editForm.roleSettings?.niveau;
-                                                const lvlNote = {
-                                                    own: 'Niveau Eigen — deze rol ziet alleen de eigen gebruiker, geen andere personen.',
-                                                    employer: 'Niveau Werkgever — deze rol ziet personen in dienst bij de eigen werkgever. Onderaannemer-personen niet.',
-                                                    employerAndSubContractors: 'Niveau Structuur — deze rol ziet personen van de eigen werkgever én van onderaannemers van die werkgever.',
-                                                    departments: 'Niveau Afdelingen — deze rol ziet personen binnen toegewezen afdelingen.',
-                                                    managerAndEmployees: 'Niveau Manager/Medewerkers — deze rol ziet directe-rapportage relaties.',
-                                                    all: 'Niveau Alles — deze rol ziet alle personen binnen de tenant, ongeacht werkgever.'
-                                                }[lvl];
-                                                return lvlNote ? (
-                                                    <div className="mt-2 px-2 py-1.5 bg-yim-50 border border-yim-200 rounded text-[11px] text-yim-700">
-                                                        <span className="font-semibold">Bereik: </span>{lvlNote}
-                                                    </div>
-                                                ) : null;
-                                            })()}
+                                    <div className="bg-white rounded-2xl border border-yim-200 overflow-hidden mt-2">
+                                        <div className="px-4 py-5">
+                                            <h3 className="text-2xl font-bold text-yim-700 leading-8" style={{ fontFamily: 'Nunito, sans-serif' }}>Afgeleide data-inzage</h3>
+                                            <p className="text-sm text-yim-600 opacity-70 mt-1 leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>De velden worden automatisch bepaald op basis van de geconfigureerde rol maar je kan handmatig aanpassingen maken mocht dit niet toereikend zijn. Selecteer hier de categorie en/of velden die je wilt tonen/verbergen.</p>
                                         </div>
 
                                         {/* ===== RISICO-BALK (uitkomst-indicator) ===== */}
@@ -3100,7 +3123,7 @@
                                             const finalCats = { ...derivedCats };
                                             Object.entries(overrides).forEach(([k, v]) => { finalCats[k] = v; });
                                             const sensitivityToLevel = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
-                                            const sensitivityLabels = { 1: 'Geen inzage', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
+                                            const sensitivityLabels = { 1: 'Geen', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
                                             const sensitivityColors = { 1: '#9CA3AF', 2: '#10B981', 3: '#F59E0B', 4: '#EF4444' };
                                             let maxLevel = 1;
                                             const activeNames = [];
@@ -3116,15 +3139,15 @@
                                             const positionPct = ((maxLevel - 1) / 3) * 100;
 
                                             return (
-                                                <div className="px-5 py-4 bg-gradient-to-br from-yim-50 to-white border-b border-yim-200">
+                                                <div className="px-4 py-6 border-b border-yim-200">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div>
-                                                            <h4 className="text-xs font-bold text-yim-600 uppercase tracking-wider">Risico-inzage</h4>
-                                                            <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">Gevoeligheidsniveau van actieve categorieën</p>
+                                                            <h4 className="text-2xl font-bold text-yim-700 leading-8" style={{ fontFamily: 'Nunito, sans-serif' }}>Risico-inzage</h4>
+                                                            <p className="text-sm text-yim-600 opacity-70 mt-0.5 leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>Gevoeligheidsniveau van actieve categorieën</p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: markerColor }}>{markerLabel}</span>
-                                                            <p className="text-[10px] text-yim-500 opacity-70 mt-0.5">{activeNames.length} categorie(ën) actief</p>
+                                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: markerColor }}>{markerLabel}</span>
+                                                            <p className="text-[10px] text-yim-500 opacity-70 mt-1">{activeNames.length} {activeNames.length === 1 ? 'categorie' : 'categorieën'} actief</p>
                                                         </div>
                                                     </div>
                                                     {/* Gradient balk met segmenten */}
@@ -3144,7 +3167,7 @@
                                                             </svg>
                                                         </div>
                                                     </div>
-                                                    <div className="flex justify-between mt-3 text-[10px] text-yim-500 opacity-60">
+                                                    <div className="flex justify-between mt-3 text-xs text-yim-500 opacity-60">
                                                         <span>Geen</span>
                                                         <span>Basis</span>
                                                         <span>Gevoelig</span>
@@ -3170,28 +3193,58 @@
                                                 const visibleFieldCount = totalFields - hiddenFieldCount;
 
                                                 return (
-                                                <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isOverridden ? 'bg-amber-50/40 border-amber-300' : isActive ? 'bg-yim-50 border-yim-500/40' : 'bg-white border-yim-200'}`}>
+                                                <div key={cat.id} className={`rounded-lg overflow-hidden border transition-colors ${isOverridden ? 'bg-amber-50/40 border-amber-300' : 'bg-white border-yim-200 hover:border-yim-300'}`}>
                                                     {/* Category row — klik op rij = expand, klik op checkbox = toggle */}
                                                     <div className={`flex items-center justify-between px-4 py-3 ${!isActive ? 'opacity-60' : ''} ${canExpand ? 'cursor-pointer hover:bg-yim-50/50' : ''}`}
                                                         onClick={() => canExpand && toggleExpand(cat.id)}>
                                                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            {/* Checkbox — apart klikbaar */}
-                                                            <button onClick={(e) => { e.stopPropagation(); toggleOverride(cat.id); }}
-                                                                className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${isActive ? isOverridden ? 'bg-amber-500 border-amber-500' : 'bg-yim-500 border-yim-500' : 'bg-white border-yim-300 hover:border-yim-500'}`}
-                                                                title={isActive ? 'Klik om te verbergen' : 'Klik om te tonen'}>
-                                                                {isActive && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                                            </button>
+                                                            {/* Checkbox — per UI Kit + Figma spec:
+                                                                36×36 hit-area (button padding) rondom 20×20 visuele box.
+                                                                3 states: selected / indeterminate (some fields off) / unselected. */}
+                                                            {(() => {
+                                                                const isIndeterminate = isActive && !isAllOrNothing && hiddenFieldCount > 0;
+                                                                const boxClass = !isActive
+                                                                    ? 'bg-white border-yim-300'
+                                                                    : isOverridden
+                                                                        ? 'bg-amber-500 border-amber-500'
+                                                                        : 'bg-yim-500 border-yim-500';
+                                                                const title = isIndeterminate
+                                                                    ? `${visibleFieldCount}/${totalFields} velden zichtbaar — klik om hele categorie te verbergen`
+                                                                    : isActive ? 'Klik om te verbergen' : 'Klik om te tonen';
+                                                                const ariaChecked = isIndeterminate ? 'mixed' : (isActive ? 'true' : 'false');
+                                                                return (
+                                                                    <button onClick={(e) => { e.stopPropagation(); toggleOverride(cat.id); }}
+                                                                        role="checkbox" aria-checked={ariaChecked} aria-label={`${cat.name} categorie`}
+                                                                        className="p-2 flex items-center justify-center flex-shrink-0 rounded hover:bg-yim-50 transition-colors"
+                                                                        title={title}>
+                                                                        <span className={`w-5 h-5 rounded-[4px] flex items-center justify-center border-2 transition-colors ${boxClass}`}>
+                                                                            {isActive && isIndeterminate && (
+                                                                                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14" /></svg>
+                                                                            )}
+                                                                            {isActive && !isIndeterminate && (
+                                                                                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                                            )}
+                                                                        </span>
+                                                                    </button>
+                                                                );
+                                                            })()}
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className={`text-sm font-medium ${isActive ? 'text-yim-700' : 'text-yim-400'}`}>{cat.name}</span>
+                                                                    <span className={`text-base font-semibold ${isActive ? 'text-yim-700' : 'text-yim-400'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>{cat.name}</span>
                                                                     {isAllOrNothing && (
-                                                                        <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control">
+                                                                        <svg className="w-3.5 h-3.5 text-yim-400" fill="currentColor" viewBox="0 0 20 20" title="Alleen aan/uit, geen veld-niveau control" aria-hidden="true">
                                                                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                                                                         </svg>
                                                                     )}
+                                                                    {/* Field-count als pill-badge inline (Figma-style) */}
+                                                                    {isActive && !isAllOrNothing && (
+                                                                        <span className={`text-[11px] px-2 py-0.5 rounded-full border ${hiddenFieldCount > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-yim-50 text-yim-600 border-yim-200'}`}>
+                                                                            {visibleFieldCount}/{totalFields} velden zichtbaar
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 {isDerived && reasons.length > 0 && (
-                                                                    <p className="text-[11px] text-yim-500 opacity-70 mt-0.5 truncate">
+                                                                    <p className="text-sm text-yim-500 opacity-70 mt-1 truncate leading-5" style={{ fontFamily: 'Nunito, sans-serif' }}>
                                                                         Afgeleid uit: {reasons.slice(0, 3).join(', ')}
                                                                         {reasons.length > 3 && (
                                                                             <span className="relative group inline-block ml-1">
@@ -3210,12 +3263,6 @@
                                                                 {!isDerived && !isOverridden && (
                                                                     <p className="text-[11px] text-yim-400 mt-0.5">Niet nodig voor huidige taken</p>
                                                                 )}
-                                                                {isActive && !isAllOrNothing && hiddenFieldCount === 0 && (
-                                                                    <p className="text-[11px] text-yim-500 opacity-60 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar</p>
-                                                                )}
-                                                                {isActive && hiddenFieldCount > 0 && (
-                                                                    <p className="text-[11px] text-amber-600 mt-0.5">{visibleFieldCount}/{totalFields} velden zichtbaar · {hiddenFieldCount} handmatig verborgen</p>
-                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="flex-shrink-0 ml-2 flex items-center gap-1">
@@ -3223,8 +3270,8 @@
                                                                 <span className="text-[10px] text-amber-600 italic">Override</span>
                                                             )}
                                                             {canExpand && (
-                                                                <span className="p-1.5 text-yim-400">
-                                                                    <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <span className="p-2 text-yim-400" aria-hidden="true">
+                                                                    <svg className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                                     </svg>
                                                                 </span>
@@ -3261,7 +3308,7 @@
                                                                         return (
                                                                             <span key={field.id} className="relative group inline-flex">
                                                                                 <button disabled
-                                                                                    className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                                    className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                                     style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}>
                                                                                     <svg className="w-3.5 h-3.5 text-yim-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                                                         <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -3284,7 +3331,7 @@
                                                                     }
                                                                     return (
                                                                         <button key={field.id} onClick={() => toggleField(cat.id, field.id)}
-                                                                            className={`inline-flex items-center gap-1.5 py-1 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
+                                                                            className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-[4px] text-[13px] font-semibold transition-all border ${chipClass}`}
                                                                             style={{ fontFamily: 'Nunito, sans-serif', letterSpacing: '0.14px', lineHeight: '20px' }}
                                                                             title={titleText}>
                                                                             {showCheck && (
@@ -3320,17 +3367,18 @@
                                         )}
 
                                         {/* canReveal — segmented Aan/Uit per Figma */}
-                                        <div className="border-t border-yim-200 px-5 py-4">
+                                        <div className="border-t border-yim-200 px-4 py-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-yim-600">Tijdelijk onthullen</p>
-                                                    <p className="text-xs text-yim-500 opacity-60">Gemaskeerde velden 5 sec tonen</p>
+                                                    <p className="text-base font-semibold text-yim-700" style={{ fontFamily: 'Nunito, sans-serif' }}>Tijdelijk onthullen</p>
+                                                    <p className="text-sm text-yim-500 opacity-70" style={{ fontFamily: 'Nunito, sans-serif' }}>Gemaskeerde velden 5 sec tonen</p>
                                                 </div>
-                                                <div className="inline-flex rounded-lg border border-yim-200 overflow-hidden">
+                                                {/* Toggle per Figma spec 9703:1201 — 247×36 (twee even brede knoppen) */}
+                                                <div className="inline-flex h-9 rounded-lg border border-yim-200 overflow-hidden" style={{ width: '247px' }}>
                                                     <button onClick={() => setEditForm(prev => ({ ...prev, canReveal: true }))}
-                                                        className={`px-6 py-1.5 text-sm font-medium transition-all ${editForm.canReveal ? 'bg-teal-500 text-white' : 'bg-white text-yim-600 hover:bg-yim-50'}`}>Aan</button>
+                                                        className={`flex-1 text-sm font-semibold transition-all ${editForm.canReveal ? 'bg-yim-500 text-white' : 'bg-white text-yim-600 hover:bg-yim-50'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>Aan</button>
                                                     <button onClick={() => setEditForm(prev => ({ ...prev, canReveal: false }))}
-                                                        className={`px-6 py-1.5 text-sm font-medium transition-all border-l border-yim-200 ${!editForm.canReveal ? 'bg-yim-100 text-yim-700' : 'bg-white text-yim-600 hover:bg-yim-50'}`}>Uit</button>
+                                                        className={`flex-1 text-sm font-semibold transition-all border-l border-yim-200 ${!editForm.canReveal ? 'bg-yim-50 text-yim-700' : 'bg-white text-yim-600 hover:bg-yim-50'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>Uit</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -3338,54 +3386,24 @@
                                         {/* ===== 'In de praktijk' — concrete persoon-type ✓/✗ obv niveau-keuze ===== */}
                                         {(() => {
                                             const niveau = editForm.roleSettings?.niveau;
-                                            const finalCats2 = { ...derivedCats };
-                                            Object.entries(overrides).forEach(([k, v]) => { finalCats2[k] = v; });
-                                            const heeftBSN = !!finalCats2.government_id;
-                                            const scenarios = {
-                                                own: [
-                                                    { label: 'Mezelf', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Andere medewerkers eigen bedrijf', visible: false, detail: 'niveau te beperkt' },
-                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau te beperkt' }
-                                                ],
-                                                employer: [
-                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Onderaannemer-personen', visible: false, detail: 'niveau Werkgever blokkeert' },
-                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
-                                                ],
-                                                employerAndSubContractors: [
-                                                    { label: 'Eigen werknemers', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Onderaannemer-personen', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' },
-                                                    { label: 'Vreemde bedrijven', visible: false, detail: 'niveau te beperkt' }
-                                                ],
-                                                all: [
-                                                    { label: 'Alle personen in tenant', visible: true, detail: heeftBSN ? 'inclusief BSN ⚠️' : 'basisgegevens' }
-                                                ],
-                                                departments: [
-                                                    { label: 'Personen in toegewezen afdelingen', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Andere personen', visible: false, detail: 'buiten afdelings-scope' }
-                                                ],
-                                                managerAndEmployees: [
-                                                    { label: 'Directe rapportages', visible: true, detail: heeftBSN ? 'inclusief BSN' : 'basisgegevens' },
-                                                    { label: 'Andere personen', visible: false, detail: 'buiten manager-relatie' }
-                                                ]
-                                            }[niveau] || [];
-                                            if (scenarios.length === 0) return null;
+                                            // Figma scope-note: éénregelig, groene check + scope-tekst per niveau
+                                            const scopeText = {
+                                                own: 'Data van jezelf',
+                                                employer: 'Data van personen in dienst bij eigen werkgever',
+                                                employerAndSubContractors: 'Data van personen in dienst bij eigen werkgever én onderaannemers',
+                                                all: 'Data van alle personen in tenant, ongeacht werkgever',
+                                                departments: 'Data van personen in toegewezen afdelingen',
+                                                managerAndEmployees: 'Data van directe rapportages'
+                                            }[niveau];
+                                            if (!scopeText) return null;
                                             return (
-                                                <div className="border-t-2 border-yim-200 px-5 py-4 bg-gradient-to-br from-yim-50 to-white">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <h4 className="text-sm font-bold text-yim-700 uppercase tracking-wider">In de praktijk</h4>
-                                                        <span className="text-[10px] text-yim-500 opacity-60 italic">Bij niveau-keuze</span>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        {scenarios.map((s, i) => (
-                                                            <div key={i} className="flex items-center gap-2 text-[12px]">
-                                                                <span className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-[10px] ${s.visible ? 'bg-green-100 text-green-700' : 'bg-yim-100 text-yim-400'}`}>
-                                                                    {s.visible ? '✓' : '✗'}
-                                                                </span>
-                                                                <span className="text-yim-700 font-medium">{s.label}</span>
-                                                                <span className="text-yim-500 opacity-70">— {s.detail}</span>
-                                                            </div>
-                                                        ))}
+                                                <div className="border-t border-yim-200 px-5 py-4">
+                                                    <h4 className="text-sm font-semibold text-yim-700 mb-2">Data inzage in de praktijk</h4>
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                                                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                        </span>
+                                                        <span className="text-yim-700">{scopeText}</span>
                                                     </div>
                                                 </div>
                                             );
@@ -3783,6 +3801,59 @@
 
                                 {/* OLD CONCEPT B BLOCK REMOVED - replaced by preset-first UI above */}
 
+                            </div>
+                        </div>
+
+                        {/* ===== Sticky bottom-nav per Figma node 9486-1453 =====
+                             Layout: Terug links · (Risico-inzage: [level pill] [count pill] Opslaan) rechts */}
+                        <div className="bg-white border-t border-yim-200 px-6 py-3 flex items-center justify-between shrink-0">
+                            <button onClick={closeRoleEditor} className="text-sm font-semibold text-yim-500 hover:text-yim-700 transition-colors px-2 py-1">
+                                Terug
+                            </button>
+                            <div className="flex items-center gap-3">
+                                {(() => {
+                                    // Bereken risico-niveau + velden-count uit actieve categorieën
+                                    const effectiveCats = concept === 'A'
+                                        ? (linkedProfile?.allowedCategories || {})
+                                        : concept === 'G'
+                                        ? (() => {
+                                            const d = deriveTo9Categories(editForm.roleSettings || createDefaultRoleSettings());
+                                            const merged = { ...d.allowedCategories };
+                                            Object.entries(editForm._overrides || {}).forEach(([k,v]) => { merged[k] = v; });
+                                            return merged;
+                                        })()
+                                        : (editForm.allowedCategories || {});
+                                    const sensitivityToLevel = { basis: 2, gevoelig: 3, zeer_gevoelig: 4 };
+                                    const sensitivityLabels = { 1: 'Geen', 2: 'Basis', 3: 'Gevoelig', 4: 'Zeer gevoelig' };
+                                    let maxLevel = 1;
+                                    let totalFields = 0;
+                                    let selectedFields = 0;
+                                    const fieldOverrides = editForm._fieldOverrides || {};
+                                    CATEGORIES.forEach(cat => {
+                                        totalFields += cat.fields.length;
+                                        if (!effectiveCats[cat.id]) return; // categorie uit → geen veld geselecteerd
+                                        const catFO = fieldOverrides[cat.id] || {};
+                                        const hidden = Object.values(catFO).filter(v => v === false).length;
+                                        selectedFields += (cat.fields.length - hidden);
+                                        const lvl = sensitivityToLevel[cat.sensitivity] || 1;
+                                        if (lvl > maxLevel) maxLevel = lvl;
+                                    });
+                                    const level = SENSITIVITY_LEVELS.find(l => l.level === maxLevel);
+                                    return (
+                                        <>
+                                            <span className="text-sm text-yim-600 opacity-70">Risico-inzage:</span>
+                                            {level && (
+                                                <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: level.color }}>{sensitivityLabels[maxLevel]}</span>
+                                            )}
+                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium bg-yim-100 text-yim-700 border border-yim-200">
+                                                {selectedFields}/{totalFields} velden geselecteerd
+                                            </span>
+                                        </>
+                                    );
+                                })()}
+                                <button onClick={saveRole} disabled={!editForm.name} className="ml-2 px-5 py-2 bg-yim-500 text-white text-sm font-medium rounded-lg hover:bg-yim-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {isNewRole ? 'Rol aanmaken' : 'Opslaan'}
+                                </button>
                             </div>
                         </div>
 
